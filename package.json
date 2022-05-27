@@ -1,0 +1,24 @@
+{
+  "name": "discordbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dorge47/DiscordBot.git"
+  },
+  "author": "Chris Andrade <christopher@tulaus.dev> (https://tulaus.dev)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Dorge47/DiscordBot/issues"
+  },
+  "homepage": "https://github.com/Dorge47/DiscordBot#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "discord.js": "^13.7.0",
+    "dotenv": "^16.0.1"
+  }
+}
