@@ -142,9 +142,9 @@ async function announceStream(streamId, channelId) {
         console.error(streamerInfo.shortName + " cancelled stream with ID: " + streamId + ", skipping announcement");
     }
     else {
-        if (streamData.available_at != cacheData.available_at) { // Stream has already started or been rescheduled
+        if (streamData.available_at != cacheData.available_at) { // Stream has already started or been rescheduled, or we're waiting for the host
             let timeUntilStream = new Date(streamData.available_at) - new Date();
-            if (timeUntilStream < -300000) { // Stream has already started over five minutes ago
+            if (timeUntilStream < -300000 && streamData.available_at != undefined) { // Stream has already started over five minutes ago
                 console.error("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
                 console.error("Start time: " + streamData.available_at);
             }
@@ -158,7 +158,7 @@ async function announceStream(streamId, channelId) {
                 fileCache['streams'][cacheIndex] = streamData;
                 return;
             }
-            else if (streamData.status == "live") { // Stream start time has changed, but is live now
+            else if (streamData.status == "live" && streamData.available_at != undefined) { // Stream start time has changed, but is live now
                 let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
                 await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
             }
