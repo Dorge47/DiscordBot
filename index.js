@@ -61,6 +61,8 @@ function getAppropriateGuildChannel(org) {
             return process.env.N_JP_ID;
         case 5:
             return process.env.N_EN_ID;
+        case 6:
+            return process.env.VOMS_ID;
     };
 };
 
@@ -211,7 +213,7 @@ client.on('messageCreate', async msg => {
     if (msg.author.id != process.env.ADMIN_ID) {
         return;
     };
-    switch (msg.content) {
+    switch (msg.content.toLowerCase()) {
         case 'test':
             msg.reply('I\'m working!');
             break;
@@ -224,6 +226,11 @@ client.on('messageCreate', async msg => {
             break;
         case 'log':
             console.log(msg);
+            await msg.reply('Confirmed log.');
+            break;
+        case 'refresh':
+            loadFileCache();
+            await msg.reply('Confirmed refresh of file cache.');
             break;
         default:
             break;
