@@ -1,2 +1,5 @@
 ﻿/.vs
 /node_modules
+.env
+streams.json
+screwyYouTubeAPI.js
