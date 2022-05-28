@@ -3,3 +3,4 @@
 .env
 streams.json
 bot.log
+startup.sh
