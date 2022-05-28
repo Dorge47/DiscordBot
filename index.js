@@ -146,6 +146,7 @@ async function announceStream(streamId, channelId) {
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (timeUntilStream < -300000) { // Stream has already started over five minutes ago
                 console.error("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
+                console.error("Start time: " + streamData.available_at);
             }
             else if (timeUntilStream > 60000) { // Stream has been rescheduled for at least a minute from now
                 clearTimeoutsManually(streamData.id, "streamId");
