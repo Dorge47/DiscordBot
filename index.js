@@ -74,7 +74,7 @@ function livestreamLoop(currentId) {
         console.log("Finished sweep, relaxing");
         initLoop = false;
     };
-    currentLoopTimeout = setTimeout(livestreamLoop, initLoop ? 10000 : 30000, nextId);
+    currentLoopTimeout = setTimeout(livestreamLoop, initLoop ? 5000 : 10000, nextId);
     timeoutsActive.push(currentLoopTimeout);
 };
 
@@ -92,7 +92,7 @@ async function processUpcomingStreams(channelId) {
                 if (fileCache['streams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < 0) {
+                    if (timeUntilStream < -300000) {
                         console.error("Stream with ID: " + streamData[i].id + " already started, skipping announcement");
                         fileCache['streams'].splice(j,1);
                     }
@@ -238,9 +238,9 @@ client.on('messageCreate', async msg => {
     };
 });
 
-client.login(process.env.CLIENT_TOKEN);
+client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 
-// Final initializations (no Discord stuff here)
+// Final initializations
 
 loadFileCache();
 setTimeout(function() {
