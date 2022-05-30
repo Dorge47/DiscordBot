@@ -177,15 +177,21 @@ async function announceStream(streamId, channelId) {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
             await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
         }
-        else { // Recheck for live in 20 seconds
-            clearTimeoutsManually(streamData.id, "streamId");
-            let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
-            let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
-            console.log(debugMsg);
-            timeoutsActive.push(announceTimeout);
-            announcementTimeouts.push([announceTimeout, streamData.id]);
-            fileCache['streams'][cacheIndex] = streamData;
-            return;
+        else {
+            let timeUntilStream = new Date(streamData.available_at) - new Date();
+            if (timeUntilStream > 360000000) {// Sometimes waiting rooms get rescheduled while in our system and fly under the radar to this point
+                console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
+            }
+            else {// Recheck for live in 20 seconds
+                clearTimeoutsManually(streamData.id, "streamId");
+                let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
+                let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
+                console.log(debugMsg);
+                timeoutsActive.push(announceTimeout);
+                announcementTimeouts.push([announceTimeout, streamData.id]);
+                fileCache['streams'][cacheIndex] = streamData;
+                return;
+            }
         }
     }
     clearTimeoutsManually(streamId, "streamId");
@@ -222,6 +228,7 @@ client.on('messageCreate', async msg => {
             for (let i = timeoutsActive.length - 1; i >= 0 ; i--) {
                 clearTimeout(timeoutsActive[i]);
             };
+            writeStreams;
             await msg.reply('Confirmed logout.');
             client.destroy();
             break;
