@@ -253,7 +253,6 @@ setTimeout(function() {
         let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
         if (timeUntilStream > 360000000) {
             console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
-            clearTimeoutsManually(fileCache['streams'][i].id, "streamId");
             fileCache['streams'].splice(i, 1);
         }
         else if (timeUntilStream > 0) {
@@ -262,6 +261,9 @@ setTimeout(function() {
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
+        }
+        else if (fileCache['streams'][i].available_at == undefined) {
+            fileCache['streams'].splice(i,1);
         }
         else {
             fileCache['streams'].splice(i,1);
