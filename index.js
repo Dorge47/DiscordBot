@@ -79,8 +79,7 @@ function livestreamLoop(currentId) {
 };
 
 async function processUpcomingStreams(channelId) {
-    let streamDat = await youtube.getFutureVids(channelId);
-    let streamData = JSON.parse(streamDat);
+    let streamData = await youtube.getFutureVids(channelId);
     for (let i = 0; i < streamData.length; i++) {
         if (streamData[i].status == "live") {
             continue;
@@ -122,8 +121,7 @@ async function processUpcomingStreams(channelId) {
 };
 
 async function announceStream(streamId, channelId) {
-    let streamDat = await youtube.getVideoById(streamId);
-    let streamData = JSON.parse(streamDat);
+    let streamData = await youtube.getVideoById(streamId);
     if (typeof(streamData.id) == "undefined") {
         console.error("StreamId: " + streamId + ", channelId: " + channelId + ", raw JSON: " + JSON.stringify(streamData));
         process.exit();
@@ -253,7 +251,12 @@ loadFileCache();
 setTimeout(function() {
     for (let i = fileCache['streams'].length - 1; i >= 0; i--) {
         let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
-        if (timeUntilStream > 0) {
+        if (timeUntilStream > 360000000) {
+            console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
+            clearTimeoutsManually(fileCache['streams'][i].id, "streamId");
+            fileCache['streams'].splice(i, 1);
+        }
+        else if (timeUntilStream > 0) {
             let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
             let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
