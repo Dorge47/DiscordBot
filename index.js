@@ -85,7 +85,7 @@ async function processUpcomingStreams(channelId) {
             continue;
         };
         let streamProcessed = false;
-        let streamDate = JSON.stringify(streamData[i].available_at);
+        let streamDate = youtube.clean(JSON.stringify(streamData[i].available_at));
         for (let j = fileCache['streams'].length - 1; j >= 0; j--) {
             if (fileCache['streams'][j].id == streamData[i].id) {
                 streamProcessed = true;
@@ -123,7 +123,7 @@ async function processUpcomingStreams(channelId) {
 
 async function announceStream(streamId, channelId) {
     let streamData = await youtube.getVideoById(streamId);
-    let streamDate = JSON.stringify(streamData.available_at);
+    let streamDate = youtube.clean(JSON.stringify(streamData.available_at));
     if (typeof(streamData.id) == "undefined") {
         console.error("StreamId: " + streamId + ", channelId: " + channelId + ", raw JSON: " + JSON.stringify(streamData));
         process.exit();
