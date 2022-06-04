@@ -89,8 +89,8 @@ async function processUpcomingStreams(channelId) {
             if (fileCache['streams'][j].id == streamData[i].id) {
                 streamProcessed = true;
                 if (fileCache['streams'][j].available_at != streamData[i].available_at) {
-                    console.log(streamData[i].available_at);
-                    console.log(fileCache['streams'][j].available_at);
+                    console.log(typeof(streamData[i].available_at));
+                    console.log(typeof(fileCache['streams'][j].available_at));
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
                     if (timeUntilStream < -300000) {
