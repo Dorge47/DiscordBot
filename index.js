@@ -97,7 +97,7 @@ async function processUpcomingStreams(channelId) {
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
-                        let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
+                        let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining (processed)";
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
                         announcementTimeouts.push([announceTimeout, streamData[i].id]);
@@ -149,7 +149,7 @@ async function announceStream(streamId, channelId) {
             else if (timeUntilStream > 60000) { // Stream has been rescheduled for at least a minute from now
                 clearTimeoutsManually(streamData.id, "streamId");
                 let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
-                let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
+                let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining (announcement)";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
                 announcementTimeouts.push([announceTimeout, streamData.id]);
