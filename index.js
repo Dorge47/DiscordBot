@@ -152,6 +152,7 @@ async function announceStream(streamId, channelId) {
                 clearTimeoutsManually(streamData.id, "streamId");
                 let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
                 let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
+                debugMsg += "\n" + streamDate + "\n" + cacheData.available_at;
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
                 announcementTimeouts.push([announceTimeout, streamData.id]);
