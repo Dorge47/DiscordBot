@@ -99,6 +99,7 @@ async function processUpcomingStreams(channelId) {
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
+                        debugMsg += "\n" + streamDate + "\n" + cacheData.available_at;
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
                         announcementTimeouts.push([announceTimeout, streamData[i].id]);
