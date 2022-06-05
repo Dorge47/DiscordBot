@@ -99,7 +99,8 @@ async function processUpcomingStreams(channelId) {
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
-                        debugMsg += "\n" + streamDate + "\n" + cacheData.available_at;
+                        debugMsg += "\n" + "process" + "\n" + streamDate + " (" + typeof(streamDate) + ")"
+                        debugMsg += "\n" + fileCache['streams'][j].available_at + " (" + typeof(fileCache['streams'][j].available_at) + ")";
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
                         announcementTimeouts.push([announceTimeout, streamData[i].id]);
@@ -153,7 +154,8 @@ async function announceStream(streamId, channelId) {
                 clearTimeoutsManually(streamData.id, "streamId");
                 let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
                 let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
-                debugMsg += "\n" + streamDate + "\n" + cacheData.available_at;
+                debugMsg += "announce" + "\n" + streamDate + " (" + typeof(streamDate) + ")";
+                debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
                 announcementTimeouts.push([announceTimeout, streamData.id]);
