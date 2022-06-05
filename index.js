@@ -85,13 +85,12 @@ async function processUpcomingStreams(channelId) {
             continue;
         };
         let streamProcessed = false;
-        let streamDate = youtube.clean(JSON.stringify(streamData[i].available_at));
         for (let j = fileCache['streams'].length - 1; j >= 0; j--) {
             if (fileCache['streams'][j].id == streamData[i].id) {
                 streamProcessed = true;
-                if (fileCache['streams'][j].available_at != streamDate) {
+                if (fileCache['streams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
-                    let timeUntilStream = new Date(streamDate) - new Date();
+                    let timeUntilStream = new Date(streamData[i].available_at) - new Date();
                     if (timeUntilStream < -300000) {
                         console.error("Stream with ID: " + streamData[i].id + " already started, skipping announcement");
                         fileCache['streams'].splice(j,1);
@@ -99,7 +98,7 @@ async function processUpcomingStreams(channelId) {
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
-                        debugMsg += "\n" + "process" + "\n" + streamDate + " (" + typeof(streamDate) + ")"
+                        debugMsg += "\n" + "process" + "\n" + streamData[i].available_at + " (" + typeof(streamData[i].available_at) + ")"
                         debugMsg += "\n" + fileCache['streams'][j].available_at + " (" + typeof(fileCache['streams'][j].available_at) + ")";
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
@@ -111,7 +110,7 @@ async function processUpcomingStreams(channelId) {
             };
         };
         if (!streamProcessed) {
-            let timeUntilStream = new Date(streamDate) - new Date();
+            let timeUntilStream = new Date(streamData[i].available_at) - new Date();
             let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
             let debugMsg = "Set timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
@@ -125,7 +124,6 @@ async function processUpcomingStreams(channelId) {
 
 async function announceStream(streamId, channelId) {
     let streamData = await youtube.getVideoById(streamId);
-    let streamDate = youtube.clean(JSON.stringify(streamData.available_at));
     if (typeof(streamData.id) == "undefined") {
         console.error("StreamId: " + streamId + ", channelId: " + channelId + ", raw JSON: " + JSON.stringify(streamData));
         process.exit();
@@ -144,17 +142,17 @@ async function announceStream(streamId, channelId) {
         console.error(streamerInfo.shortName + " cancelled stream with ID: " + streamId + ", skipping announcement");
     }
     else {
-        if (streamDate != cacheData.available_at) { // Stream has already started or been rescheduled, or we're waiting for the host
-            let timeUntilStream = new Date(streamDate) - new Date();
-            if (timeUntilStream < -300000 && streamDate != undefined) { // Stream has already started over five minutes ago
+        if (streamData.available_at != cacheData.available_at) { // Stream has already started or been rescheduled, or we're waiting for the host
+            let timeUntilStream = new Date(streamData.available_at) - new Date();
+            if (timeUntilStream < -300000 && streamData.available_at != undefined) { // Stream has already started over five minutes ago
                 console.error("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
-                console.error("Start time: " + streamDate);
+                console.error("Start time: " + streamData.available_at);
             }
             else if (timeUntilStream > 60000) { // Stream has been rescheduled for at least a minute from now
                 clearTimeoutsManually(streamData.id, "streamId");
                 let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
                 let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
-                debugMsg += "announce" + "\n" + streamDate + " (" + typeof(streamDate) + ")";
+                debugMsg += "announce" + "\n" + streamData.available_at + " (" + typeof(streamData.available_at) + ")";
                 debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
@@ -162,7 +160,7 @@ async function announceStream(streamId, channelId) {
                 fileCache['streams'][cacheIndex] = streamData;
                 return;
             }
-            else if (streamData.status == "live" && streamDate != undefined) { // Stream start time has changed, but is live now
+            else if (streamData.status == "live" && streamData.available_at != undefined) { // Stream start time has changed, but is live now
                 let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
                 await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
             }
@@ -182,7 +180,7 @@ async function announceStream(streamId, channelId) {
             await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
         }
         else {
-            let timeUntilStream = new Date(streamDate) - new Date();
+            let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (timeUntilStream > 360000000) {// Sometimes waiting rooms get rescheduled while in our system and fly under the radar to this point
                 console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
             }
