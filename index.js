@@ -92,7 +92,7 @@ async function processUpcomingStreams(channelId) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
                     if (timeUntilStream < -300000) {
-                        console.error("Stream with ID: " + streamData[i].id + " already started, skipping announcement");
+                        console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
                         fileCache['streams'].splice(j,1);
                     }
                     else {
@@ -142,58 +142,69 @@ async function announceStream(streamId, channelId) {
         console.error(streamerInfo.shortName + " cancelled stream with ID: " + streamId + ", skipping announcement");
     }
     else {
-        if (streamData.available_at != cacheData.available_at) { // Stream has already started or been rescheduled, or we're waiting for the host
-            let timeUntilStream = new Date(streamData.available_at) - new Date();
-            if (timeUntilStream < -300000 && streamData.available_at != undefined) { // Stream has already started over five minutes ago
-                console.error("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
-                console.error("Start time: " + streamData.available_at);
+        try {
+            if (streamData.available_at != cacheData.available_at) { // Stream has already started or been rescheduled, or we're waiting for the host
+                let timeUntilStream = new Date(streamData.available_at) - new Date();
+                if (timeUntilStream < -300000 && streamData.available_at != undefined) { // Stream has already started over five minutes ago
+                    console.error("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
+                    console.error("Start time: " + streamData.available_at);
+                }
+                else if (timeUntilStream > 60000) { // Stream has been rescheduled for at least a minute from now
+                    clearTimeoutsManually(streamData.id, "streamId");
+                    let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
+                    let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
+                    debugMsg += "announce" + "\n" + streamData.available_at + " (" + typeof(streamData.available_at) + ")";
+                    debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
+                    console.log(debugMsg);
+                    timeoutsActive.push(announceTimeout);
+                    announcementTimeouts.push([announceTimeout, streamData.id]);
+                    fileCache['streams'][cacheIndex] = streamData;
+                    return;
+                }
+                else if (streamData.status == "live" && streamData.available_at != undefined) { // Stream start time has changed, but is live now
+                    let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
+                    await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
+                }
+                else { // Recheck for live in 20 seconds
+                    clearTimeoutsManually(streamData.id, "streamId");
+                    let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
+                    let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
+                    console.log(debugMsg);
+                    timeoutsActive.push(announceTimeout);
+                    announcementTimeouts.push([announceTimeout, streamData.id]);
+                    fileCache['streams'][cacheIndex] = streamData;
+                    return;
+                }
             }
-            else if (timeUntilStream > 60000) { // Stream has been rescheduled for at least a minute from now
-                clearTimeoutsManually(streamData.id, "streamId");
-                let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
-                let debugMsg = "Rectified timer for announcement of " + streamData.id + ", " + timeUntilStream + " milliseconds remaining";
-                debugMsg += "announce" + "\n" + streamData.available_at + " (" + typeof(streamData.available_at) + ")";
-                debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
-                console.log(debugMsg);
-                timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, streamData.id]);
-                fileCache['streams'][cacheIndex] = streamData;
-                return;
-            }
-            else if (streamData.status == "live" && streamData.available_at != undefined) { // Stream start time has changed, but is live now
+            else if (streamData.status == "live") { // Stream start time unchanged and live
                 let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
                 await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
             }
-            else { // Recheck for live in 20 seconds
-                clearTimeoutsManually(streamData.id, "streamId");
-                let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
-                let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
-                console.log(debugMsg);
-                timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, streamData.id]);
-                fileCache['streams'][cacheIndex] = streamData;
-                return;
+            else {
+                let timeUntilStream = new Date(streamData.available_at) - new Date();
+                if (timeUntilStream > 360000000) {// Sometimes waiting rooms get rescheduled while in our system and fly under the radar to this point
+                    console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
+                }
+                else {// Recheck for live in 20 seconds
+                    clearTimeoutsManually(streamData.id, "streamId");
+                    let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
+                    let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
+                    console.log(debugMsg);
+                    timeoutsActive.push(announceTimeout);
+                    announcementTimeouts.push([announceTimeout, streamData.id]);
+                    fileCache['streams'][cacheIndex] = streamData;
+                    return;
+                }
             }
         }
-        else if (streamData.status == "live") { // Stream start time unchanged and live
-            let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
-            await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
-        }
-        else {
-            let timeUntilStream = new Date(streamData.available_at) - new Date();
-            if (timeUntilStream > 360000000) {// Sometimes waiting rooms get rescheduled while in our system and fly under the radar to this point
-                console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
-            }
-            else {// Recheck for live in 20 seconds
-                clearTimeoutsManually(streamData.id, "streamId");
-                let announceTimeout = setTimeout(announceStream, 20000, streamData.id, channelId);
-                let debugMsg = "Delaying announcement of " + streamData.id + " for 20 seconds";
-                console.log(debugMsg);
-                timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, streamData.id]);
-                fileCache['streams'][cacheIndex] = streamData;
-                return;
-            }
+        catch (err) {
+            console.log(e);
+            console.log(JSON.stringify(streamData));
+            console.log(JSON.stringify(fileCache['streams']));
+            console.log(JSON.stringify(streamerInfo));
+            console.log(timeUntilStream);
+            console.log(new Date());
+            process.exit();
         }
     }
     clearTimeoutsManually(streamId, "streamId");
