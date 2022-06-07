@@ -198,7 +198,7 @@ async function announceStream(streamId, channelId) {
             }
         }
         catch (err) {
-            console.log(e);
+            console.log(err);
             console.log(JSON.stringify(streamData));
             console.log(JSON.stringify(fileCache['streams']));
             console.log(JSON.stringify(streamerInfo));
