@@ -91,7 +91,7 @@ async function processUpcomingStreams(channelId) {
                 if (fileCache['streams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000) {
+                    if (timeUntilStream < -300000 && streamData.status == "live") {
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
                         fileCache['streams'].splice(j,1);
                     }
