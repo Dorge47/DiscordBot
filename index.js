@@ -160,8 +160,11 @@ async function announceStream(streamId, channelId) {
             return;
         }
         else if (streamData.status == "live") {
-            let guildChannelId = getAppropriateGuildChannel(streamerInfo.org)
+            let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
             await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
+        }
+        else if (streamData.status == "past") {
+            console.log("Stream with ID: " + streamData.id + " already concluded, skipping");
         }
         else { // Recheck for live in 20 seconds
             clearTimeoutsManually(streamData.id, "streamId");
