@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 require('dotenv').config();
 const Discord = require('discord.js');
 const fs = require('fs');
