@@ -67,6 +67,44 @@ function getAppropriateGuildChannel(org) {
     };
 };
 
+async function startupPurge() {
+    for (let i = fileCache['streams'].length - 1; i >= 0; i--) {
+        let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
+        if (timeUntilStream > 360000000) {
+            console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
+            fileCache['streams'].splice(i, 1);
+        }
+        else if (timeUntilStream > 0) {
+            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
+            let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+            console.log(debugMsg);
+            timeoutsActive.push(announceTimeout);
+            announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
+        }
+        else if (fileCache['streams'][i].available_at == undefined) {
+            fileCache['streams'].splice(i,1);
+        }
+        else {
+            let streamData = await youtube.getVideoById(fileCache['streams'][i].id);
+            let timeUntilStream = new Date(streamData.available_at) - new Date();
+            if (streamData.status == "past" || streamData.status == "missing") {
+                fileCache['streams'].splice(i, 1);
+            }
+            else if (timeUntilStream < -300000 && streamData.status == "live") {
+                fileCache['streams'].splice(i, 1);
+            }
+            else {
+                let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
+                let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+                console.log(debugMsg);
+                timeoutsActive.push(announceTimeout);
+                announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
+            };
+        };
+    };
+    console.log("Cache purged");
+};
+
 function livestreamLoop(currentId) {
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentLoopTimeout); // Remove currentLoopTimeout from timeoutsActive
     processUpcomingStreams(fileCache['streamers'][currentId].id);
@@ -215,6 +253,7 @@ client.on('messageCreate', async msg => {
             writeStreams;
             await msg.reply('Confirmed logout.');
             client.destroy();
+            console.log("Server shutting down");
             break;
         case 'log':
             console.log(msg);
@@ -235,27 +274,10 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 
 loadFileCache();
 setTimeout(function() {
-    for (let i = fileCache['streams'].length - 1; i >= 0; i--) {
-        let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
-        if (timeUntilStream > 360000000) {
-            console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
-            fileCache['streams'].splice(i, 1);
-        }
-        else if (timeUntilStream > 0) {
-            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
-            let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
-            console.log(debugMsg);
-            timeoutsActive.push(announceTimeout);
-            announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
-        }
-        else if (fileCache['streams'][i].available_at == undefined) {
-            fileCache['streams'].splice(i,1);
-        }
-        else {
-            fileCache['streams'].splice(i,1);
-        }
-    }
+    startupPurge();
+    console.log("Synchronizing streams.json");
+    writeStreams();
+    console.log("streams.json synchronized");
+    currentLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
+    timeoutsActive.push(currentLoopTimeout);
 }, 5000);
-writeStreams();
-currentLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
-timeoutsActive.push(currentLoopTimeout);
