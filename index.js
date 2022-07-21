@@ -4,6 +4,7 @@ const Discord = require('discord.js');
 const fs = require('fs');
 const youtube = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
+const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
 var fileCache = {};
 fileCache['ytStreamers'] = [];
 fileCache['twitchStreamers'] = [];
@@ -193,7 +194,7 @@ async function processUpcomingStreams(channelId) {
 };
 
 async function processTwitchChannel(userId) {
-    let streamData = await twitch.getLiveStreams(userId);
+    let streamData = await twitch.getLiveStreams(userId,twitchAPIKey);
     let streamerInfo = getInfoFromTwitchChannelId(userId);
     if (streamData.length == 0) { // User is not live
         for (let i = fileCache['twitchStreams'].length - 1; i >= 0; i--) { // Remove any of user's past streams from cache
