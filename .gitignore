@@ -1,6 +1,7 @@
 ﻿/.vs
 /node_modules
 .env
-streams.json
+ytStreams.json
+twitchStreams.json
 bot.log
 startup.sh

@@ -3,22 +3,27 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const fs = require('fs');
 const youtube = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
+const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
 var fileCache = {};
-fileCache['streamers'] = [];
-fileCache['streams'] = [];
+fileCache['ytStreamers'] = [];
+fileCache['twitchStreamers'] = [];
+fileCache['ytStreams'] = [];
+fileCache['twitchStreams'] = [];
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 var timeoutsActive = [];
-var currentLoopTimeout;
+var currentYtLoopTimeout;
 var announcementTimeouts = [];
 var initLoop = true;
 
 function loadFileCache() {
-    fileCache['streamers'] = JSON.parse(fs.readFileSync('streamers.json'));
-    fileCache['streams'] = JSON.parse(fs.readFileSync('streams.json'));
+    fileCache['ytStreamers'] = JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
+    fileCache['ytStreams'] = JSON.parse(fs.readFileSync('ytStreams.json'));
+    fileCache['twitchStreamers'] = JSON.parse(fs.readFileSync('TwitchStreamers.json'));
+    fileCache['twitchStreams'] = JSON.parse(fs.readFileSync('twitchStreams.json'));
 };
 
 function writeStreams() {
-    fs.writeFileSync('streams.json', JSON.stringify(fileCache['streams']));
+    fs.writeFileSync('ytStreams.json', JSON.stringify(fileCache['ytStreams']));
 };
 
 function clearTimeoutsManually(identifier, method) {
@@ -39,13 +44,22 @@ function clearTimeoutsManually(identifier, method) {
     console.log("Timeout with " + method + ": " + identifier + " cleared successfully");
 };
 
-function getInfoFromChannelId(channelId) {
-    for (let i = 0; i < fileCache['streamers'].length; i++) {
-        if (fileCache['streamers'][i].id == channelId) {
-            return fileCache['streamers'][i];
+function getInfoFromYtChannelId(channelId) {
+    for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
+        if (fileCache['ytStreamers'][i].id == channelId) {
+            return fileCache['ytStreamers'][i];
         };
     };
-    console.error("fileCache['streamers'] contains no entry with id: " + channelId);
+    console.error("fileCache['ytStreamers'] contains no entry with id: " + channelId);
+};
+
+function getInfoFromTwitchChannelId(channelId) {
+    for (let i = 0; i < fileCache['twitchStreamers'].length; i++) {
+        if (fileCache['twitchStreamers'][i].id == channelId) {
+            return fileCache['twitchStreamers'][i];
+        };
+    };
+    console.error("fileCache['twitchStreamers'] contains no entry with id: " + channelId);
 };
 
 function getAppropriateGuildChannel(org) {
@@ -64,57 +78,74 @@ function getAppropriateGuildChannel(org) {
             return process.env.N_EN_ID;
         case 6:
             return process.env.VOMS_ID;
+        case 7:
+            return process.env.VSHOJO_ID;
     };
 };
 
 async function startupPurge() {
-    for (let i = fileCache['streams'].length - 1; i >= 0; i--) {
-        let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
+    for (let i = fileCache['ytStreams'].length - 1; i >= 0; i--) {
+        let timeUntilStream = new Date(fileCache['ytStreams'][i].available_at) - new Date();
         if (timeUntilStream > 360000000) {
             console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
-            fileCache['streams'].splice(i, 1);
+            fileCache['ytStreams'].splice(i, 1);
         }
         else if (timeUntilStream > 0) {
-            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
-            let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
+            let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
-            announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
+            announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
         }
-        else if (fileCache['streams'][i].available_at == undefined) {
-            fileCache['streams'].splice(i,1);
+        else if (fileCache['ytStreams'][i].available_at == undefined) {
+            fileCache['ytStreams'].splice(i,1);
         }
         else {
-            let streamData = await youtube.getVideoById(fileCache['streams'][i].id);
+            let streamData = await youtube.getVideoById(fileCache['ytStreams'][i].id);
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
-                fileCache['streams'].splice(i, 1);
+                fileCache['ytStreams'].splice(i, 1);
             }
             else if (timeUntilStream < -300000 && streamData.status == "live") {
-                fileCache['streams'].splice(i, 1);
+                fileCache['ytStreams'].splice(i, 1);
             }
             else {
-                let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
-                let debugMsg = "Set timer for announcement of " + fileCache['streams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+                let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
+                let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, fileCache['streams'][i].id]);
+                announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
             };
         };
     };
     console.log("Cache purged");
 };
 
+function twitchLoop(currentId) {
+    timeoutsActive = timeoutsActive.filter(timeout => timeout != currentTwitchLoopTimeout); // Remove currentTwitchLoopTimeout from timeoutsActive
+    processTwitchChannel(fileCache['twitchStreamers'][currentId].id);
+    var nextId = (currentId == fileCache['twitchStreamers'].length - 1) ? 0 : (currentId + 1);
+    let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length));
+    currentTwitchLoopTimeout = setTimeout(twitchLoop, twitchInterval, nextId);
+    timeoutsActive.push(currentTwitchLoopTimeout);
+};
+
+function twitchStartup() {
+    let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length));
+    currentTwitchLoopTimeout = setTimeout(twitchLoop, twitchInterval, 0);
+    timeoutsActive.push(currentTwitchLoopTimeout);
+};
+
 function livestreamLoop(currentId) {
-    timeoutsActive = timeoutsActive.filter(timeout => timeout != currentLoopTimeout); // Remove currentLoopTimeout from timeoutsActive
-    processUpcomingStreams(fileCache['streamers'][currentId].id);
-    var nextId = (currentId == fileCache['streamers'].length - 1) ? 0 : (currentId + 1);
+    timeoutsActive = timeoutsActive.filter(timeout => timeout != currentYtLoopTimeout); // Remove currentYtLoopTimeout from timeoutsActive
+    processUpcomingStreams(fileCache['ytStreamers'][currentId].id);
+    var nextId = (currentId == fileCache['ytStreamers'].length - 1) ? 0 : (currentId + 1);
     if (initLoop && !nextId) {
         console.log("Finished sweep, relaxing");
         initLoop = false;
     };
-    currentLoopTimeout = setTimeout(livestreamLoop, initLoop ? 5000 : 10000, nextId);
-    timeoutsActive.push(currentLoopTimeout);
+    currentYtLoopTimeout = setTimeout(livestreamLoop, initLoop ? 5000 : 10000, nextId);
+    timeoutsActive.push(currentYtLoopTimeout);
 };
 
 async function processUpcomingStreams(channelId) {
@@ -124,25 +155,25 @@ async function processUpcomingStreams(channelId) {
             continue;
         };
         let streamProcessed = false;
-        for (let j = fileCache['streams'].length - 1; j >= 0; j--) {
-            if (fileCache['streams'][j].id == streamData[i].id) {
+        for (let j = fileCache['ytStreams'].length - 1; j >= 0; j--) {
+            if (fileCache['ytStreams'][j].id == streamData[i].id) {
                 streamProcessed = true;
-                if (fileCache['streams'][j].available_at != streamData[i].available_at) {
+                if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000 && streamData.status == "live") {
+                    if (timeUntilStream < -300000 && streamData[i].status == "live") {
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
-                        fileCache['streams'].splice(j,1);
+                        fileCache['ytStreams'].splice(j,1);
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
                         debugMsg += "\n" + "process" + "\n" + streamData[i].available_at + " (" + typeof(streamData[i].available_at) + ")"
-                        debugMsg += "\n" + fileCache['streams'][j].available_at + " (" + typeof(fileCache['streams'][j].available_at) + ")";
+                        debugMsg += "\n" + fileCache['ytStreams'][j].available_at + " (" + typeof(fileCache['ytStreams'][j].available_at) + ")";
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
                         announcementTimeouts.push([announceTimeout, streamData[i].id]);
-                        fileCache['streams'][j] = streamData[i];
+                        fileCache['ytStreams'][j] = streamData[i];
                     };
                 };
                 break;
@@ -155,23 +186,55 @@ async function processUpcomingStreams(channelId) {
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData[i].id]);
-            fileCache['streams'].push(streamData[i]);
+            fileCache['ytStreams'].push(streamData[i]);
         };
     };
     writeStreams();
 };
 
+async function processTwitchChannel(userId) {
+    let streamData = await twitch.getLiveStreams(userId);
+    let streamerInfo = getInfoFromTwitchChannelId(userId);
+    if (streamData.length == 0) { // User is not live
+        for (let i = fileCache['twitchStreams'].length - 1; i >= 0; i--) { // Remove any of user's past streams from cache
+            if (fileCache['twitchStreams'][i].user_id == userId) {
+                fileCache['twitchStreams'].splice(i,1);
+            };
+        };
+        fs.writeFileSync('twitchStreams.json', JSON.stringify(fileCache['twitchStreams']));
+        return;
+    }
+    else {
+        for (let i = 0; i < fileCache['twitchStreams'].length; i++) {
+            if (fileCache['twitchStreams'][i].id == streamData[0].id) { // Stream has already been announced
+                return;
+            };
+        };
+        let timeSinceStart = (new Date() - new Date(streamData[0].started_at));
+        if (timeSinceStart > 300000) { // Stream started over five minutes ago
+            console.log("Skipping announcement for " + streamerInfo.shortName + ", stream started " + timeSinceStart + " milliseconds ago");
+        }
+        else {
+            let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
+            await fireTwitchAnnouncement(streamerInfo.shortName, guildChannelId, streamData[0].user_login, streamData[0].game_name); // Can't tell if supposed to use user_name or user_login
+        };
+        fileCache['twitchStreams'].push(streamData[0]);
+        fs.writeFileSync('twitchStreams.json', JSON.stringify(fileCache['twitchStreams']));
+        return;
+    };
+};
+
 async function announceStream(streamId, channelId) {
     let streamData = await youtube.getVideoById(streamId);
-    let streamerInfo = getInfoFromChannelId(channelId);
+    let streamerInfo = getInfoFromYtChannelId(channelId);
     let cacheIndex;
     let cacheData;
     let foundInCache = false;
-    for (let i = 0; i < fileCache['streams'].length; i++) {
-        if (fileCache['streams'][i].id == streamId) {
+    for (let i = 0; i < fileCache['ytStreams'].length; i++) {
+        if (fileCache['ytStreams'][i].id == streamId) {
             foundInCache = true;
             cacheIndex = i;
-            cacheData = fileCache['streams'][i];
+            cacheData = fileCache['ytStreams'][i];
             break;
         };
     };
@@ -191,7 +254,7 @@ async function announceStream(streamId, channelId) {
             debugMsg += "\n" + "announce" + "\n" + streamData.available_at + " (" + typeof(streamData.available_at) + ")";
             if (foundInCache) {
                 debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
-                fileCache['streams'][cacheIndex] = streamData;
+                fileCache['ytStreams'][cacheIndex] = streamData;
             };
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
@@ -200,7 +263,7 @@ async function announceStream(streamId, channelId) {
         }
         else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
-            await fireAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
+            await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
         }
         else if (streamData.status == "past") {
             console.log("Stream with ID: " + streamData.id + " already concluded, skipping");
@@ -213,20 +276,28 @@ async function announceStream(streamId, channelId) {
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData.id]);
             if (foundInCache) {
-                fileCache['streams'][cacheIndex] = streamData;
+                fileCache['ytStreams'][cacheIndex] = streamData;
             };
             return;
         };
     };
     clearTimeoutsManually(streamData.id, "streamId");
     if (foundInCache) {
-        fileCache['streams'].splice(cacheIndex, 1);
+        fileCache['ytStreams'].splice(cacheIndex, 1);
     };
 };
 
-async function fireAnnouncement(shortName = "Vtuber", videoId = "dQw4w9WgXcQ", guildChannelId = process.env.H_JP_ID) {// Verification should be done BEFORE this is called
+async function fireYtAnnouncement(shortName = "YouTube Vtuber", videoId = "dQw4w9WgXcQ", guildChannelId = process.env.H_JP_ID) {// Verification should be done BEFORE this is called
     var preAnnounce = (shortName + " is live!");
     var announce = "https://youtu.be/" + videoId;
+    await client.channels.cache.get(guildChannelId).send(preAnnounce);
+    await client.channels.cache.get(guildChannelId).send(announce);
+    return;
+};
+
+async function fireTwitchAnnouncement(shortName = "Twitch Vtuber", guildChannelId = process.env.VSHOJO_ID, username = "ironmouse", game = "Just Chatting") {
+    var preAnnounce = (shortName + " is live!");
+    var announce = "https://www.twitch.tv/" + username;
     await client.channels.cache.get(guildChannelId).send(preAnnounce);
     await client.channels.cache.get(guildChannelId).send(announce);
     return;
@@ -275,9 +346,10 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 loadFileCache();
 setTimeout(function() {
     startupPurge();
-    console.log("Synchronizing streams.json");
+    console.log("Synchronizing JSON");
     writeStreams();
-    console.log("streams.json synchronized");
-    currentLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
-    timeoutsActive.push(currentLoopTimeout);
+    console.log("JSON synchronized");
+    currentYtLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
+    timeoutsActive.push(currentYtLoopTimeout);
+    twitchStartup();
 }, 5000);
