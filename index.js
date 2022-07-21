@@ -6,7 +6,6 @@ const youtube = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github
 var fileCache = {};
 fileCache['streamers'] = [];
 fileCache['streams'] = [];
-fileCache['recents'] = [];
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 var timeoutsActive = [];
 var currentLoopTimeout;
@@ -16,16 +15,11 @@ var initLoop = true;
 function loadFileCache() {
     fileCache['streamers'] = JSON.parse(fs.readFileSync('streamers.json'));
     fileCache['streams'] = JSON.parse(fs.readFileSync('streams.json'));
-    fileCache['recents'] = JSON.parse(fs.readFileSync('recents.json'));
 };
 
 function writeStreams() {
     fs.writeFileSync('streams.json', JSON.stringify(fileCache['streams']));
 };
-
-function writeRecents() {
-    fs.writeFileSync('recents.json', JSON.stringify(fileCache['recents']));
-}
 
 function clearTimeoutsManually(identifier, method) {
     switch (method) {
@@ -73,15 +67,6 @@ function getAppropriateGuildChannel(org) {
     };
 };
 
-function beenAnnounced(videoId) {
-    for (let i = 0; i < fileCache['recents'].length; i++) {
-        if (fileCache['recents'][i] == videoId) {
-            return true;
-        };
-    };
-    return false;
-};
-
 async function startupPurge() {
     for (let i = fileCache['streams'].length - 1; i >= 0; i--) {
         let timeUntilStream = new Date(fileCache['streams'][i].available_at) - new Date();
@@ -107,10 +92,6 @@ async function startupPurge() {
             }
             else if (timeUntilStream < -300000 && streamData.status == "live") {
                 fileCache['streams'].splice(i, 1);
-                if (!beenAnnounced(streamData.id)) {
-                    fileCache['recents'].push(streamData.id);
-                    writeRecents();
-                };
             }
             else {
                 let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['streams'][i].id, fileCache['streams'][i].channel.id);
@@ -121,15 +102,6 @@ async function startupPurge() {
             };
         };
     };
-    for (let i = fileCache['recents'].length - 1; i >= 0; i--) {
-        let status = await youtube.getVideoById(fileCache['recents'][i]).status;
-        if (status == "live") {
-            continue;
-        }
-        else {
-            fileCache['recents'].splice(i,1);
-        }
-    }
     console.log("Cache purged");
 };
 
@@ -148,7 +120,7 @@ function livestreamLoop(currentId) {
 async function processUpcomingStreams(channelId) {
     let streamData = await youtube.getFutureVids(channelId);
     for (let i = 0; i < streamData.length; i++) {
-        if (beenAnnounced(streamData[i].id)) {
+        if (streamData[i].status == "live") {
             continue;
         };
         let streamProcessed = false;
@@ -158,11 +130,9 @@ async function processUpcomingStreams(channelId) {
                 if (fileCache['streams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000 && streamData[i].status == "live") {
+                    if (timeUntilStream < -300000 && streamData.status == "live") {
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
                         fileCache['streams'].splice(j,1);
-                        fileCache['recents'].push(streamData[i].id);
-                        writeRecents();
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
@@ -213,10 +183,6 @@ async function announceStream(streamId, channelId) {
         if (timeUntilStream < -300000 && streamData.status == "live") {// Stream has already started over five minutes ago
             console.log("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
             console.log("Start time: " + streamData.available_at);
-            if (!beenAnnounced(streamId)) {
-                fileCache['recents'].push(streamId);
-                writeRecents();
-            }
         }
         else if (timeUntilStream > 60000 && streamData.status != "live") {// Stream has been rescheduled for at least a minute from now
             clearTimeoutsManually(streamData.id, "streamId");
@@ -263,8 +229,6 @@ async function fireAnnouncement(shortName = "Vtuber", videoId = "dQw4w9WgXcQ", g
     var announce = "https://youtu.be/" + videoId;
     await client.channels.cache.get(guildChannelId).send(preAnnounce);
     await client.channels.cache.get(guildChannelId).send(announce);
-    fileCache['recents'].push(videoId);
-    writeRecents();
     return;
 };
 
@@ -311,9 +275,9 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 loadFileCache();
 setTimeout(function() {
     startupPurge();
+    console.log("Synchronizing streams.json");
     writeStreams();
-    writeRecents();
-    console.log("JSON synchronized");
+    console.log("streams.json synchronized");
     currentLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
     timeoutsActive.push(currentLoopTimeout);
 }, 5000);
