@@ -88,7 +88,7 @@ async function startupPurge() {
     for (let i = fileCache['ytStreams'].length - 1; i >= 0; i--) {
         let timeUntilStream = new Date(fileCache['ytStreams'][i].available_at) - new Date();
         if (timeUntilStream > 360000000) {
-            console.error("Stream with ID: " + streamData.id + " is over 100 hours in the future, ignoring");
+            console.error("Stream with ID: " + fileCache['ytStreams'][i].id + " is over 100 hours in the future, ignoring");
             fileCache['ytStreams'].splice(i, 1);
         }
         else if (timeUntilStream > 0) {
@@ -132,7 +132,7 @@ function twitchLoop(currentId) {
 };
 
 function twitchStartup() {
-    let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length));
+    let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length)); // Ensure that it never takes longer than 20000ms to notice a stream
     currentTwitchLoopTimeout = setTimeout(twitchLoop, twitchInterval, 0);
     timeoutsActive.push(currentTwitchLoopTimeout);
 };
@@ -153,7 +153,7 @@ async function processUpcomingStreams(channelId) {
     let streamData = await youtube.getFutureVids(channelId);
     for (let i = 0; i < streamData.length; i++) {
         if (streamData[i].status == "live") {
-            continue;
+            continue; // Reject currently live since we can't tell whether we've already announced
         };
         let streamProcessed = false;
         for (let j = fileCache['ytStreams'].length - 1; j >= 0; j--) {
