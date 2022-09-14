@@ -196,6 +196,10 @@ async function processUpcomingStreams(channelId) {
 async function processTwitchChannel(userId) {
     let streamData = await twitch.getLiveStreams(userId,twitchAPIKey);
     let streamerInfo = getInfoFromTwitchChannelId(userId);
+    if (typeof streamData == 'undefined') {
+        console.log(userId);
+        process.exit();
+    }
     if (streamData.length == 0) { // User is not live
         for (let i = fileCache['twitchStreams'].length - 1; i >= 0; i--) { // Remove any of user's past streams from cache
             if (fileCache['twitchStreams'][i].user_id == userId) {
