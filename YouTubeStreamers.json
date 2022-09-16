@@ -147,6 +147,70 @@
     "id": "UC_vMYWcDjmfdpH6r4TTn1MQ",
     "org": 1
 }, {
+    "shortName": "Miyabi",
+    "id": "UC6t3-_N8A6ME1JShZHHqOMw",
+    "org": 8
+}, {
+    "shortName": "Izuru",
+    "id": "UCZgOv3YDEs-ZnZWDYVwJdmA",
+    "org": 8
+}, {
+    "shortName": "Aruran",
+    "id": "UCKeAhJvy8zgXWbh9duVjIaQ",
+    "org": 8
+}, {
+    "shortName": "Rikka",
+    "id": "UC9mf_ZVpouoILRY9NUIaK-w",
+    "org": 8
+}, {
+    "shortName": "Kira",
+    "id": "UCEzsociuFqVwgZuMaZqaCsg",
+    "org": 8
+}, {
+    "shortName": "Suzaku",
+    "id": "UCGKgJ4MtJ1coi6tWJUfnsQA",
+    "org": 8
+}, {
+    "shortName": "Astel",
+    "id": "UCNVEsYbiZjH5QLmGeSgTSzg",
+    "org": 8
+}, {
+    "shortName": "Temma",
+    "id": "UCGNI4MENvnsymYjKiZwv9eg",
+    "org": 8
+}, {
+    "shortName": "Roberu",
+    "id": "UCANDOlYTJT7N5jlRC3zfzVA",
+    "org": 8
+}, {
+    "shortName": "Shien",
+    "id": "UChSvpZYRPh0FvG4SJGSga3g",
+    "org": 8
+}, {
+    "shortName": "Oga",
+    "id": "UCwL7dgTxKo8Y4RFIKWaf8gA",
+    "org": 8
+}, {
+    "shortName": "Kaoru",
+    "id": "UCsehvfwaWF6nWuFnXI0AqZQ",
+    "org": 8
+}, {
+    "shortName": "Fuma",
+    "id": "UCc88OV45ICgHbn3ZqLLb52w",
+    "org": 8
+}, {
+    "shortName": "Uyu",
+    "id": "UCgRqGV1gBf2Esxh0Tz1vxzw",
+    "org": 8
+}, {
+    "shortName": "Gamma",
+    "id": "UCkT1u65YS49ca_LsFwcTakw",
+    "org": 8
+}, {
+    "shortName": "Rio",
+    "id": "UCdfMHxjcCc2HSd9qFvfJgjg",
+    "org": 8
+}, {
     "shortName": "Risu",
     "id": "UCOyYb1c43VlX9rc_lT6NKQw",
     "org": 2
@@ -226,6 +290,22 @@
     "shortName": "Bae",
     "id": "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
     "org": 3
+}, {
+    "shortName": "Regis",
+    "id": "UCyxtGMdWlURZ30WSnEjDOQw",
+    "org": 9
+}, {
+    "shortName": "Magni",
+    "id": "UC7MMNHR-kf9EN1rXiesMTMw",
+    "org": 9
+}, {
+    "shortName": "Axel",
+    "id": "UC2hx0xVkMoHGWijwr_lA01w",
+    "org": 9
+}, {
+    "shortName": "Vesper",
+    "id": "UCDRWSO281bIHYVi-OV3iFYA",
+    "org": 9
 }, {
     "shortName": "Debiru",
     "id": "UCjlmCrq4TP1I4xguOtJ-31w",
@@ -313,6 +393,30 @@
 }, {
     "shortName": "Yugo",
     "id": "UCSc_KzY_9WYAx9LghggjVRA",
+    "org": 5
+}, {
+    "shortName": "Maria",
+    "id": "UCwaS8_S7kMiKA3izlTWHbQg",
+    "org": 5
+}, {
+    "shortName": "Kyo",
+    "id": "UCsb-1aJgiJXJH2feV-zlZRw",
+    "org": 5
+}, {
+    "shortName": "Aia",
+    "id": "UCN68LoM3khS4gdBMiWJO8WA",
+    "org": 5
+}, {
+    "shortName": "Aster",
+    "id": "UCpzxZW5kghGnO5TmAFJQAVw",
+    "org": 5
+}, {
+    "shortName": "Scarle",
+    "id": "UCFgXWZOUZA2oYHNr6qDmsTQ",
+    "org": 5
+}, {
+    "shortName": "Ren",
+    "id": "UCKu59gTZ_rdEmerdx5rV4Yg",
     "org": 5
 }, {
     "shortName": "Pikamee",
