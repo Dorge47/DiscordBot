@@ -315,7 +315,12 @@ async function fireTwitchAnnouncement(shortName = "Twitch Vtuber", guildChannelI
 // Discord stuff
 
 client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}`);
+    let startupTime = new Date();
+    let dateString = "";
+    dateString += startupTime.getFullYear() + ":" + (startupTime.getMonth() + 1) + ":"
+    + startupTime.getDate() + ":" + startupTime.getHours() + ":" + startupTime.getMinutes()
+    + ":" + startupTime.getSeconds();
+    console.log(`Logged in as ${client.user.tag} at ` + dateString);
 });
 
 client.on('messageCreate', async msg => {
