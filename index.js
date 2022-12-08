@@ -155,7 +155,7 @@ function livestreamLoop(currentId) {
 };
 
 async function processUpcomingStreams(channelId) {
-    let functionStart = new Date();
+    //let functionStart = new Date();
     let streamData = await youtube.getFutureVids(channelId);
     let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
     for (let i = 0; i < holodexData.length; i++) {
@@ -211,9 +211,9 @@ async function processUpcomingStreams(channelId) {
         };
     };
     writeStreams();
-    let functionEnd = new Date();
-    let functionLength = functionEnd - functionStart
-    console.log("Request took " + functionLength + " ms")
+    //let functionEnd = new Date();
+    //let functionLength = functionEnd - functionStart
+    //console.log("Request took " + functionLength + " ms")
 };
 
 async function processTwitchChannel(userId) {
