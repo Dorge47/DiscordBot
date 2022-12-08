@@ -212,7 +212,7 @@ async function processUpcomingStreams(channelId) {
     };
     writeStreams();
     let functionEnd = new Date();
-    let functionLength = Math.round((functionEnd-functionStart)/100)/10
+    let functionLength = functionEnd - functionStart
     console.log("Request took " + functionLength + " ms")
 };
 
