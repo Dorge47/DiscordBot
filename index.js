@@ -4,6 +4,7 @@ const Discord = require('discord.js');
 const fs = require('fs');
 const youtube = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
+const holodex = require('./../HolodexAPI/screwyHolodexAPI.js');// https://github.com/Dorge47/HolodexAPI
 const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
 var fileCache = {};
 fileCache['ytStreamers'] = [];
@@ -154,7 +155,22 @@ function livestreamLoop(currentId) {
 };
 
 async function processUpcomingStreams(channelId) {
+    let functionStart = new Date();
     let streamData = await youtube.getFutureVids(channelId);
+    let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
+    for (let i = 0; i < holodexData.length; i++) {
+        let streamNoticed = false;
+        for (let j = 0; j < streamData.length; j++) {
+            if (streamData[j].id == holodexData[i].id) {
+                streamNoticed = true;
+                break;
+            };
+        };
+        if (!streamNoticed) {
+            let streamToPush = await youtube.getVideoById(holodexData[i].id)
+            streamData.push(streamToPush);
+        };
+    };
     for (let i = 0; i < streamData.length; i++) {
         if (streamData[i].status == "live") {
             continue; // Reject currently live since we can't tell whether we've already announced
@@ -195,6 +211,9 @@ async function processUpcomingStreams(channelId) {
         };
     };
     writeStreams();
+    let functionEnd = new Date();
+    let functionLength = Math.round((functionEnd-functionStart)/100)/10
+    console.log("Request took " + functionLength + " ms")
 };
 
 async function processTwitchChannel(userId) {
