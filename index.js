@@ -14,6 +14,7 @@ fileCache['twitchStreams'] = [];
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 var timeoutsActive = [];
 var currentYtLoopTimeout;
+var currentTwitchLoopTimeout;
 var announcementTimeouts = [];
 var initLoop = true;
 
@@ -354,7 +355,7 @@ client.on('messageCreate', async msg => {
             for (let i = timeoutsActive.length - 1; i >= 0 ; i--) {
                 clearTimeout(timeoutsActive[i]);
             };
-            writeStreams;
+            writeStreams();
             await msg.reply('Confirmed logout.');
             client.destroy();
             console.log("Server shutting down");
