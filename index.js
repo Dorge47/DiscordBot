@@ -2,7 +2,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const fs = require('fs');
-const youtube = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
+const youtubeScraper = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
 const holodex = require('./../HolodexAPI/screwyHolodexAPI.js');// https://github.com/Dorge47/HolodexAPI
 const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
@@ -108,7 +108,7 @@ async function startupPurge() {
             fileCache['ytStreams'].splice(i,1);
         }
         else {
-            let streamData = await youtube.getVideoById(fileCache['ytStreams'][i].id);
+            let streamData = await youtubeScraper.getVideoById(fileCache['ytStreams'][i].id);
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
                 fileCache['ytStreams'].splice(i, 1);
@@ -157,7 +157,7 @@ function livestreamLoop(currentId) {
 
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
-    let streamData = await youtube.getFutureVids(channelId);
+    let streamData = await youtubeScraper.getFutureVids(channelId);
     let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
     for (let i = 0; i < holodexData.length; i++) {
         let streamNoticed = false;
@@ -168,7 +168,7 @@ async function processUpcomingStreams(channelId) {
             };
         };
         if (!streamNoticed) {
-            let streamToPush = await youtube.getVideoById(holodexData[i].id)
+            let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id)
             streamData.push(streamToPush);
         };
     };
@@ -254,7 +254,7 @@ async function processTwitchChannel(userId) {
 };
 
 async function announceStream(streamId, channelId) {
-    let streamData = await youtube.getVideoById(streamId);
+    let streamData = await youtubeScraper.getVideoById(streamId);
     let streamerInfo = getInfoFromYtChannelId(channelId);
     let cacheIndex;
     let cacheData;
