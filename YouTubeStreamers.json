@@ -75,10 +75,6 @@
     "id": "UC1DCedRgGHBdm81E1llLhOQ",
     "org": 1
 }, {
-    "shortName": "Rushia",
-    "id": "UCl_gCybOJRIgOXw6Qb4qJzQ",
-    "org": 1
-}, {
     "shortName": "Flare",
     "id": "UCvInZx9h3jC2JzsIzoOebWg",
     "org": 1
@@ -105,10 +101,6 @@
 }, {
     "shortName": "Luna",
     "id": "UCa9Y57gfeY0Zro_noHRVrnw",
-    "org": 1
-}, {
-    "shortName": "Coco",
-    "id": "UCS9uQI-jC3DE0L4IpXyvr6w",
     "org": 1
 }, {
     "shortName": "Lamy",
@@ -271,10 +263,6 @@
     "id": "UC8rcEBzJSleTkf_-agPM20g",
     "org": 3
 }, {
-    "shortName": "Sana",
-    "id": "UCsUj0dszADCGbF3gNrQEuSQ",
-    "org": 3
-}, {
     "shortName": "Fauna",
     "id": "UCO_aKKYxn4tvrqPjcTzZ6EQ",
     "org": 3
@@ -407,10 +395,6 @@
     "id": "UCGhqxhovNfaPBpxfCruy9EA",
     "org": 5
 }, {
-    "shortName": "Yugo",
-    "id": "UCSc_KzY_9WYAx9LghggjVRA",
-    "org": 5
-}, {
     "shortName": "Maria",
     "id": "UCwaS8_S7kMiKA3izlTWHbQg",
     "org": 5
@@ -435,10 +419,6 @@
     "id": "UCKu59gTZ_rdEmerdx5rV4Yg",
     "org": 5
 }, {
-    "shortName": "Zaion",
-    "id": "UCIairB9UMDvqSKfMdv1jmjg",
-    "org": 5
-}, {
     "shortName": "Doppio",
     "id": "UCy91xBlY_Brh3bnHxKtjrrg",
     "org": 5
@@ -459,13 +439,17 @@
     "id": "UCO8WcDsF5znr-qsXlzZNpqg",
     "org": 5
 }, {
-    "shortName": "Pikamee",
-    "id": "UCajhBT4nMrg3DLS-bLL2RCg",
-    "org": 6
+    "shortName": "Zali",
+    "id": "UCK9l6rTwU3hiSZijIMq51Gw",
+    "org": 5
 }, {
-    "shortName": "Tomoshika",
-    "id": "UC3vzVK_N_SUVKqbX69L_X4g",
-    "org": 6
+    "shortName": "Vanta",
+    "id": "UCpYf6C9QsP_BRf97vLuXlIA",
+    "org": 5
+}, {
+    "shortName": "Wilson",
+    "id": "UCKpKC3M5fkcEvtOr06dmYlA",
+    "org": 5
 }, {
     "shortName": "Uto",
     "id": "UCdYR5Oyz8Q4g0ZmB4PkTD7g",
