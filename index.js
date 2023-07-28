@@ -317,7 +317,11 @@ async function announceStream(streamId, channelId) {
 };
 
 async function fireYtAnnouncement(shortName = "YouTube Vtuber", videoId = "dQw4w9WgXcQ", guildChannelId = process.env.H_JP_ID) {// Verification should be done BEFORE this is called
-    var preAnnounce = (shortName + " is live!");
+    var verb = ' is ';
+    if (shortName == "FUWAMOCO") {
+        verb = ' are ';
+    };
+    var preAnnounce = (shortName + verb + "live!");
     var announce = "https://youtu.be/" + videoId;
     await client.channels.cache.get(guildChannelId).send(preAnnounce);
     await client.channels.cache.get(guildChannelId).send(announce);
