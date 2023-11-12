@@ -79,14 +79,16 @@ function getAppropriateGuildChannel(org) {
             return process.env.N_JP_ID;
         case 5:
             return process.env.N_EN_ID;
-        case 6:
-            return process.env.VOMS_ID;
         case 7:
             return process.env.VSHOJO_ID;
         case 8:
             return process.env.HS_ID;
         case 9:
             return process.env.HS_EN_ID;
+        case 10:
+            return process.env.IL_EN_ID;
+        case 11:
+            return process.env.PC_ID;
     };
 };
 
