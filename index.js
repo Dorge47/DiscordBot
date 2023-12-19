@@ -160,18 +160,26 @@ function livestreamLoop(currentId) {
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
     let streamData = await youtubeScraper.getFutureVids(channelId);
-    let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
-    for (let i = 0; i < holodexData.length; i++) {
-        let streamNoticed = false;
-        for (let j = 0; j < streamData.length; j++) {
-            if (streamData[j].id == holodexData[i].id) {
-                streamNoticed = true;
-                break;
+    let holodexDown = false;
+    try {
+        let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
+    }
+    catch(err) {
+        holodexDown = true;
+    };
+    if (!holodexDown) {
+        for (let i = 0; i < holodexData.length; i++) {
+            let streamNoticed = false;
+            for (let j = 0; j < streamData.length; j++) {
+                if (streamData[j].id == holodexData[i].id) {
+                    streamNoticed = true;
+                    break;
+                };
             };
-        };
-        if (!streamNoticed) {
-            let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id)
-            streamData.push(streamToPush);
+            if (!streamNoticed) {
+                let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id)
+                streamData.push(streamToPush);
+            };
         };
     };
     for (let i = 0; i < streamData.length; i++) {
