@@ -161,8 +161,9 @@ async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
     let streamData = await youtubeScraper.getFutureVids(channelId);
     let holodexDown = false;
+    let holodexData = [];
     try {
-        let holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
+        holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
     }
     catch(err) {
         holodexDown = true;
