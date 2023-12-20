@@ -10,7 +10,7 @@ async function testFunc() {
         vidArr.push(youtubeScraper.getFutureVids(fileCache['ytStreamers'][i].id));
     };
     let result = await Promise.all(vidArr);
-    console.log(result);
+    console.log(JSON.stringify(result));
 };
 testFunc();
 //fs.writeFileSync('rateLimitTest.json', JSON.stringify(fileCache['ytStreams']));
