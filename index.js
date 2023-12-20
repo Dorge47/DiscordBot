@@ -178,8 +178,18 @@ async function processUpcomingStreams(channelId) {
                 };
             };
             if (!streamNoticed) {
-                let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id)
-                streamData.push(streamToPush);
+                // Check if Holodex is giving us a channel ID we don't have an org assigned to (it's happened with 2nd channels)
+                let badChannelId = true;
+                for (let j = 0; j < fileCache['ytStreamers'].length; j++) {
+                    if (holodexData[i].channel_id == fileCache['ytStreamers'][j].id) {
+                        badChannelId = false;
+                        break;
+                    };
+                };
+                if (!badChannelId) {
+                    let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id);
+                    streamData.push(streamToPush);
+                };
             };
         };
     };
