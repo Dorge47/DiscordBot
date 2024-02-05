@@ -75,10 +75,6 @@ function getAppropriateGuildChannel(org) {
             return process.env.H_ID_ID;
         case 3:
             return process.env.H_EN_ID;
-        case 4:
-            return process.env.N_JP_ID;
-        case 5:
-            return process.env.N_EN_ID;
         case 7:
             return process.env.VSHOJO_ID;
         case 8:
