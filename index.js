@@ -433,7 +433,8 @@ client.on('messageCreate', async msg => {
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
-            console.log("returned: " + rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName IS Lamy"));
+            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName IS Lamy");
+            console.log("returned: " + queryRes);
         default:
             break;
     };
