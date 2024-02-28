@@ -188,7 +188,7 @@ async function rawQuery(queryString) {// BAD BAD BAD BAD BAD THIS SHOULD BE PARA
     }
 };
 
-console.log("returned: " + rawQuery("USE " + process.env.DB_NAME));
+console.log("returned: " + rawQuery("USE " + process.env.DB_NAME + ";"));
 
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
@@ -433,7 +433,7 @@ client.on('messageCreate', async msg => {
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
-            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName IS Lamy");
+            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Lamy';");
             console.log("returned: " + queryRes);
         default:
             break;
