@@ -2,6 +2,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const fs = require('fs');
+const mariadb = require('mariadb');
 const youtubeScraper = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
 const holodex = require('./../HolodexAPI/screwyHolodexAPI.js');// https://github.com/Dorge47/HolodexAPI
@@ -12,6 +13,12 @@ fileCache['twitchStreamers'] = [];
 fileCache['ytStreams'] = [];
 fileCache['twitchStreams'] = [];
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
+const pool = mariadb.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    connectionLimit: 5
+});
 var timeoutsActive = [];
 var currentYtLoopTimeout;
 var currentTwitchLoopTimeout;
@@ -166,6 +173,22 @@ async function quotaDebug() {
     currentMidnightTimeout = setTimeout(quotaDebug, timeToMidnight);
     timeoutsActive.push(currentMidnightTimeout);
 };
+
+async function rawQuery(queryString) {// BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
+    let conn;
+    let rows;
+    try {
+        conn = await pool.getConnection();
+        rows = await conn.query(queryString);
+        console.log("rows: " + rows);
+    } catch (err) {
+        throw err;
+    } finally {
+        if (conn) return conn.end();
+    }
+};
+
+console.log("returned: " + rawQuery("USE " + process.env.DB_NAME));
 
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
@@ -409,6 +432,8 @@ client.on('messageCreate', async msg => {
             break;
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
+        case 'query test':
+            console.log("returned: " + rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName IS Lamy"));
         default:
             break;
     };
