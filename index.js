@@ -408,7 +408,7 @@ client.on('messageCreate', async msg => {
             await msg.reply('Confirmed refresh of file cache.');
             break;
         case 'quota':
-            quotaDebug();
+            msg.reply('Quota usage is ' + quota + '.');
         default:
             break;
     };
