@@ -437,8 +437,20 @@ client.on('messageCreate', async msg => {
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
+            let date1 = new Date();
             let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Lamy';");
+            let date2 = new Date();
+            let cacheRes;
+            for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
+                if (fileCache['ytStreamers'][i].shortName == 'Lamy') {
+                    cacheRes = fileCache['ytStreamers'][i];
+                    break;
+                };
+            };
+            let date3 = new Date();
             console.log("returned: " + JSON.stringify(queryRes));
+            console.log("SQL query took" + (date2 - date1) + " ms");
+            console.log("File cache took" + (date3 - date2) + " ms");
         default:
             break;
     };
