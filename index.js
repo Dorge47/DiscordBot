@@ -189,7 +189,10 @@ async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PAR
     }
 };
 
-console.log("returned: " + rawQuery("USE " + process.env.DB_NAME + ";"));
+async function initDB() {
+    let queryRes = await rawQuery("USE " + process.env.DB_NAME + ";");
+    console.log(queryRes);
+};
 
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
@@ -446,6 +449,7 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 // Final initializations
 
 loadFileCache();
+initDB();
 setTimeout(function() {
     startupPurge();
     console.log("Synchronizing JSON");
