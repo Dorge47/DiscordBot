@@ -15,8 +15,10 @@ const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 var timeoutsActive = [];
 var currentYtLoopTimeout;
 var currentTwitchLoopTimeout;
+var currentMidnightTimeout;
 var announcementTimeouts = [];
 var initLoop = true;
+var quota = 0;
 
 function loadFileCache() {
     fileCache['ytStreamers'] = JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
@@ -107,6 +109,7 @@ async function startupPurge() {
         }
         else {
             let streamData = await youtubeScraper.getVideoById(fileCache['ytStreams'][i].id);
+            quota += 1;
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
                 fileCache['ytStreams'].splice(i, 1);
@@ -153,9 +156,22 @@ function livestreamLoop(currentId) {
     timeoutsActive.push(currentYtLoopTimeout);
 };
 
+async function quotaDebug() {
+    timeoutsActive = timeoutsActive.filter(timeout => timeout != currentMidnightTimeout); // Remove currentMidnightTimeout from timeoutsActive
+    await client.channels.cache.get(process.env.ADMIN_ID).send("Quota usage is " + quota + ".");
+    quota = 0;
+    let currentTime = new Date();
+    let nextMidnight = new Date(currentTime.getFullYear(),currentTime.getMonth(),currentTime.getDate()+1);
+    let timeToMidnight = (nextMidnight - currentTime);
+    currentMidnightTimeout = setTimeout(quotaDebug, timeToMidnight);
+    timeoutsActive.push(currentMidnightTimeout);
+};
+
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
     let streamData = await youtubeScraper.getFutureVids(channelId);
+    quota += streamData[1];
+    streamData = streamData[0];
     let holodexDown = false;
     let holodexData = [];
     try {
@@ -184,6 +200,7 @@ async function processUpcomingStreams(channelId) {
                 };
                 if (!badChannelId) {
                     let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id);
+                    quota += 1;
                     streamData.push(streamToPush);
                 };
             };
@@ -272,6 +289,7 @@ async function processTwitchChannel(userId) {
 
 async function announceStream(streamId, channelId) {
     let streamData = await youtubeScraper.getVideoById(streamId);
+    quota += 1;
     let streamerInfo = getInfoFromYtChannelId(channelId);
     let cacheIndex;
     let cacheData;
@@ -389,6 +407,8 @@ client.on('messageCreate', async msg => {
             loadFileCache();
             await msg.reply('Confirmed refresh of file cache.');
             break;
+        case 'quota':
+            quotaDebug();
         default:
             break;
     };
@@ -407,4 +427,9 @@ setTimeout(function() {
     currentYtLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
     timeoutsActive.push(currentYtLoopTimeout);
     twitchStartup();
+    let currentTime = new Date();
+    let nextMidnight = new Date(currentTime.getFullYear(),currentTime.getMonth(),currentTime.getDate()+1);
+    let timeToMidnight = (nextMidnight - currentTime);
+    currentMidnightTimeout = setTimeout(quotaDebug, timeToMidnight);
+    timeoutsActive.push(currentMidnightTimeout);
 }, 5000);
