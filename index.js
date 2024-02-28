@@ -174,17 +174,18 @@ async function quotaDebug() {
     timeoutsActive.push(currentMidnightTimeout);
 };
 
-async function rawQuery(queryString) {// BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
+async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
     let conn;
     let rows;
     try {
         conn = await pool.getConnection();
         rows = await conn.query(queryString);
-        console.log("rows: " + rows);
+        console.log("rows: " + JSON.stringify(rows));
     } catch (err) {
         throw err;
     } finally {
-        if (conn) return conn.end();
+        if (conn) await conn.end();
+        return rows; // Returns an OBJECT, NOT A STRING
     }
 };
 
@@ -434,7 +435,7 @@ client.on('messageCreate', async msg => {
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
             let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Lamy';");
-            console.log("returned: " + queryRes);
+            console.log("returned: " + JSON.stringify(queryRes));
         default:
             break;
     };
