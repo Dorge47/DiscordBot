@@ -178,21 +178,16 @@ async function quotaDebug() {
 async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
     let conn;
     let rows;
-    return new Promise(async function(resolve, reject) {
+    try {
         conn = await pool.getConnection();
-        await conn.query("USE " + process.env.DB_NAME);
-        rows = await conn.query(queryString).then(async function() {
-            console.log("rows: " + JSON.stringify(rows));
-        })
-        .catch(err => {
-            console.log("THERE WAS AN ERROR");
-            console.error(err); reject(err);
-        })
-        .finally(async function() {
-            if (conn) await conn.end();
-        });
-        resolve(rows);// Returns an OBJECT, NOT A STRING
-    });
+        rows = await conn.query(queryString);
+        console.log(rows);
+    } catch (err) {
+        throw err;
+    } finally {
+        if (conn) await conn.end();
+        return rows;
+    }
 };
 
 async function processUpcomingStreams(channelId) {
