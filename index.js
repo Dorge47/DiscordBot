@@ -438,6 +438,7 @@ client.on('messageCreate', async msg => {
         case 'query test':
             let date1 = new Date();
             let queryString = "SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';";
+            console.log(queryString);
             let queryRes = await rawQuery(queryString);
             let date2 = new Date();
             let cacheRes;
