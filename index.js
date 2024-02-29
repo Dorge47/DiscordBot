@@ -184,12 +184,13 @@ async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PAR
             console.log("rows: " + JSON.stringify(rows));
         })
         .catch(err => {
+            console.log("THERE WAS AN ERROR");
             console.error(err); reject(err);
         })
         .finally(async function() {
             if (conn) await conn.end();
-            resolve(rows);// Returns an OBJECT, NOT A STRING
         });
+        resolve(rows);// Returns an OBJECT, NOT A STRING
     });
 };
 
@@ -436,34 +437,9 @@ client.on('messageCreate', async msg => {
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
-            let date1 = new Date();
             let queryString = "SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';";
-            console.log(queryString);
             let queryRes = await rawQuery(queryString);
-            let date2 = new Date();
-            let cacheRes;
-            for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
-                if (fileCache['ytStreamers'][i].shortName == 'Iroha') {
-                    cacheRes = fileCache['ytStreamers'][i]; // Return to the void
-                    break;
-                };
-            };
-            console.log("File cache got " + cacheRes.id);
-            let date3 = new Date();
-            let fileCacheRes;
-            let tempFileCache = await JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
-            for (let i = 0; i < tempFileCache.length; i++) {
-                if (tempFileCache[i].shortName == 'Iroha') {
-                    fileCacheRes = tempFileCache[i]; // Empty and become wind
-                    break;
-                };
-            };
-            console.log("File access got " + fileCacheRes.id);
-            let date4 = new Date();
             console.log("returned: " + JSON.stringify(queryRes));
-            console.log("SQL query took " + (date2 - date1) + " ms");
-            console.log("File cache took " + (date3 - date2) + " ms");
-            console.log("File access took " + (date4 - date3) + " ms");
             setTimeout(console.log, 3000, JSON.stringify(queryRes));
         default:
             break;
