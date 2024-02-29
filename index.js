@@ -183,6 +183,7 @@ async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PAR
         console.log("rows: " + JSON.stringify(rows));
     } catch (err) {
         throw err;
+        console.error(err);
     } finally {
         if (conn) await conn.end();
         return rows; // Returns an OBJECT, NOT A STRING
@@ -450,7 +451,7 @@ client.on('messageCreate', async msg => {
             console.log("File cache got " + cacheRes.id);
             let date3 = new Date();
             let fileCacheRes;
-            tempFileCache = await JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
+            let tempFileCache = await JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
             for (let i = 0; i < tempFileCache.length; i++) {
                 if (tempFileCache[i].shortName == 'Iroha') {
                     fileCacheRes = tempFileCache[i]; // Empty and become wind
