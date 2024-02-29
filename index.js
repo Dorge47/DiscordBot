@@ -437,7 +437,8 @@ client.on('messageCreate', async msg => {
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
             let date1 = new Date();
-            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';");
+            let queryString = "SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';";
+            let queryRes = await rawQuery(queryString);
             let date2 = new Date();
             let cacheRes;
             for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
