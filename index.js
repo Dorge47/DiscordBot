@@ -186,7 +186,9 @@ async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PAR
         console.error(err);
     } finally {
         if (conn) await conn.end();
-        return rows; // Returns an OBJECT, NOT A STRING
+        return new Promise(function(resolve) {
+            resolve(rows);// Returns an OBJECT, NOT A STRING
+        });
     }
 };
 
@@ -464,6 +466,7 @@ client.on('messageCreate', async msg => {
             console.log("SQL query took " + (date2 - date1) + " ms");
             console.log("File cache took " + (date3 - date2) + " ms");
             console.log("File access took " + (date4 - date3) + " ms");
+            setTimeout(console.log, 3000, JSON.stringify(queryRes));
         default:
             break;
     };
