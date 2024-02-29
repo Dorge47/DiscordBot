@@ -447,6 +447,7 @@ client.on('messageCreate', async msg => {
                     break;
                 };
             };
+            console.log("File cache got " + cacheRes.id);
             let date3 = new Date();
             let fileCacheRes;
             tempFileCache = await JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
@@ -456,6 +457,7 @@ client.on('messageCreate', async msg => {
                     break;
                 };
             };
+            console.log("File access got " + fileCacheRes.id);
             let date4 = new Date();
             console.log("returned: " + JSON.stringify(queryRes));
             console.log("SQL query took " + (date2 - date1) + " ms");
