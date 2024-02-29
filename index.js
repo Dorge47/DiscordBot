@@ -180,6 +180,7 @@ async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PAR
     let rows;
     return new Promise(async function(resolve, reject) {
         conn = await pool.getConnection();
+        await conn.query("USE " + process.env.DB_NAME);
         rows = await conn.query(queryString).then(async function() {
             console.log("rows: " + JSON.stringify(rows));
         })
