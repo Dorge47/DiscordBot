@@ -17,7 +17,8 @@ const pool = mariadb.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
-    connectionLimit: 5
+    connectionLimit: 5,
+    database: process.env.DB_NAME
 });
 var timeoutsActive = [];
 var currentYtLoopTimeout;
@@ -177,24 +178,19 @@ async function quotaDebug() {
 async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
     let conn;
     let rows;
-    try {
+    return new Promise(async function(resolve, reject) {
         conn = await pool.getConnection();
-        rows = await conn.query(queryString);
-        console.log("rows: " + JSON.stringify(rows));
-    } catch (err) {
-        throw err;
-        console.error(err);
-    } finally {
-        if (conn) await conn.end();
-        return new Promise(function(resolve) {
+        rows = await conn.query(queryString).then(async function() {
+            console.log("rows: " + JSON.stringify(rows));
+        })
+        .catch(err => {
+            console.error(err); reject(err);
+        })
+        .finally(async function() {
+            if (conn) await conn.end();
             resolve(rows);// Returns an OBJECT, NOT A STRING
         });
-    }
-};
-
-async function initDB() {
-    let queryRes = await rawQuery("USE " + process.env.DB_NAME + ";");
-    console.log(queryRes);
+    });
 };
 
 async function processUpcomingStreams(channelId) {
@@ -477,7 +473,6 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 // Final initializations
 
 loadFileCache();
-initDB();
 setTimeout(function() {
     startupPurge();
     console.log("Synchronizing JSON");
