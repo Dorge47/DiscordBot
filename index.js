@@ -436,7 +436,6 @@ client.on('messageCreate', async msg => {
             let queryString = "SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';";
             let queryRes = await rawQuery(queryString);
             console.log("returned: " + JSON.stringify(queryRes));
-            setTimeout(console.log, 3000, JSON.stringify(queryRes));
         default:
             break;
     };
