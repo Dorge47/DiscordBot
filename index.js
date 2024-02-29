@@ -438,19 +438,29 @@ client.on('messageCreate', async msg => {
             msg.reply('Quota usage is ' + quota + '.');
         case 'query test':
             let date1 = new Date();
-            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Lamy';");
+            let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';");
             let date2 = new Date();
             let cacheRes;
             for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
-                if (fileCache['ytStreamers'][i].shortName == 'Lamy') {
-                    cacheRes = fileCache['ytStreamers'][i];
+                if (fileCache['ytStreamers'][i].shortName == 'Iroha') {
+                    cacheRes = fileCache['ytStreamers'][i]; // Return to the void
                     break;
                 };
             };
             let date3 = new Date();
+            let fileCacheRes;
+            tempFileCache = await JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
+            for (let i = 0; i < tempFileCache.length; i++) {
+                if (tempFileCache[i].shortName == 'Iroha') {
+                    fileCacheRes = tempFileCache[i]; // Empty and become wind
+                    break;
+                };
+            };
+            let date4 = new Date();
             console.log("returned: " + JSON.stringify(queryRes));
-            console.log("SQL query took" + (date2 - date1) + " ms");
-            console.log("File cache took" + (date3 - date2) + " ms");
+            console.log("SQL query took " + (date2 - date1) + " ms");
+            console.log("File cache took " + (date3 - date2) + " ms");
+            console.log("File access took " + (date4 - date3) + " ms");
         default:
             break;
     };
