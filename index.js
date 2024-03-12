@@ -6,12 +6,16 @@ const mariadb = require('mariadb');
 const youtubeScraper = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
 const holodex = require('./../HolodexAPI/screwyHolodexAPI.js');// https://github.com/Dorge47/HolodexAPI
-const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
-var fileCache = {};
-fileCache['ytStreamers'] = [];
-fileCache['twitchStreamers'] = [];
-fileCache['ytStreams'] = [];
-fileCache['twitchStreams'] = [];
+const twitchAPIKey = {"secret":process.env.TWITCH_SECRET, "token": process.env.TWITCH_TOKEN, "id":process.env.TWITCH_TOKEN};
+var fileCache = {}; // This will go away with the database, keeping these lines just for the query strings
+fileCache['ytStreamers'] = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE
++ " ORDER BY OrgOrder ASC, ScanOrder ASC;"); // Is ASC the default sort order?
+fileCache['twitchStreamers'] = rawQuery("SELECT * FROM " + process.env.DB_TWITCH_TABLE
++ " ORDER BY ScanOrder ASC;");
+fileCache['ytStreams'] = rawQuery("SELECT * FROM " + process.env.DB_STREAMS_TABLE
++ " ORDER BY AvailableAt ASC;");
+fileCache['twitchStreams'] = rawQuery("SELECT * FROM " + process.env.DB_TWITCH_STREAMS_TABLE
++ " ORDER BY placeholder;");
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 const pool = mariadb.createPool({
     host: process.env.DB_HOST,
@@ -27,17 +31,6 @@ var currentMidnightTimeout;
 var announcementTimeouts = [];
 var initLoop = true;
 var quota = 0;
-
-function loadFileCache() {
-    fileCache['ytStreamers'] = JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
-    fileCache['ytStreams'] = JSON.parse(fs.readFileSync('ytStreams.json'));
-    fileCache['twitchStreamers'] = JSON.parse(fs.readFileSync('TwitchStreamers.json'));
-    fileCache['twitchStreams'] = JSON.parse(fs.readFileSync('twitchStreams.json'));
-};
-
-function writeStreams() {
-    fs.writeFileSync('ytStreams.json', JSON.stringify(fileCache['ytStreams']));
-};
 
 function clearTimeoutsManually(identifier, method) {
     switch (method) {
@@ -58,9 +51,11 @@ function clearTimeoutsManually(identifier, method) {
 };
 
 function getInfoFromYtChannelId(channelId) {
-    for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
-        if (fileCache['ytStreamers'][i].id == channelId) {
-            return fileCache['ytStreamers'][i];
+    let streamerList = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE
+    + " ORDER BY OrgOrder ASC, ScanOrder ASC;");
+    for (let i = 0; i < streamerList.length; i++) {
+        if (streamerList[i].id == channelId) {
+            return streamerList[i];
         };
     };
     console.error("fileCache['ytStreamers'] contains no entry with id: " + channelId);
@@ -175,18 +170,38 @@ async function quotaDebug() {
     timeoutsActive.push(currentMidnightTimeout);
 };
 
-async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
+async function rawQuery(queryString) { // NEVER pass data here, this is ONLY for internal requests
     let conn;
     let rows;
     try {
         conn = await pool.getConnection();
         rows = await conn.query(queryString);
-        console.log(rows);
+        //console.log(rows);
     } catch (err) {
         throw err;
     } finally {
         if (conn) await conn.end();
         return rows;
+    }
+};
+
+async function queryAnnouncement(streamData) {
+    let conn;
+    let resp;
+    try {
+        conn = await pool.getConnection();
+        resp = await conn.query("INSERT INTO streams (VideoID, Status, Title, "
+        + "AvailableAt, Announced) VALUES (?, ?, ?, ?, 1) ON DUPLICATE KEY UPD"
+        + "ATE Status=?, Title=?, AvailableAt=?, Announced=1;",
+        [streamData.id, streamData.status, streamData.title,
+        streamData.available_at, streamData.id, streamData.status,
+        streamData.title, streamData.available_at]); // Will currently fail, there is no title property of streamData
+        console.log(resp);
+    } catch (err) {
+        throw err;
+    } finally {
+        if (conn) await conn.end();
+        return resp;
     }
 };
 
@@ -268,7 +283,6 @@ async function processUpcomingStreams(channelId) {
             fileCache['ytStreams'].push(streamData[i]);
         };
     };
-    writeStreams();
     //let functionEnd = new Date();
     //let functionLength = functionEnd - functionStart
     //console.log("Request took " + functionLength + " ms")
@@ -302,7 +316,7 @@ async function processTwitchChannel(userId) {
         }
         else {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
-            await fireTwitchAnnouncement(streamerInfo.shortName, guildChannelId, streamData[0].user_login, streamData[0].game_name); // Can't tell if supposed to use user_name or user_login
+            await fireTwitchAnnouncement(streamerInfo.shortName, guildChannelId, streamData[0].user_login, streamData[0].game_name);
         };
         fileCache['twitchStreams'].push(streamData[0]);
         fs.writeFileSync('twitchStreams.json', JSON.stringify(fileCache['twitchStreams']));
@@ -351,6 +365,7 @@ async function announceStream(streamId, channelId) {
         else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
             await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
+            await queryAnnouncement(streamData);
         }
         else if (streamData.status == "past") {
             console.log("Stream with ID: " + streamData.id + " already concluded, skipping");
@@ -417,7 +432,6 @@ client.on('messageCreate', async msg => {
             for (let i = timeoutsActive.length - 1; i >= 0 ; i--) {
                 clearTimeout(timeoutsActive[i]);
             };
-            writeStreams();
             await msg.reply('Confirmed logout.');
             client.destroy();
             console.log("Server shutting down");
@@ -425,10 +439,6 @@ client.on('messageCreate', async msg => {
         case 'log':
             console.log(msg);
             await msg.reply('Confirmed log.');
-            break;
-        case 'refresh':
-            loadFileCache();
-            await msg.reply('Confirmed refresh of file cache.');
             break;
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
@@ -445,11 +455,9 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 
 // Final initializations
 
-loadFileCache();
 setTimeout(function() {
     startupPurge();
     console.log("Synchronizing JSON");
-    writeStreams();
     console.log("JSON synchronized");
     currentYtLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
     timeoutsActive.push(currentYtLoopTimeout);
