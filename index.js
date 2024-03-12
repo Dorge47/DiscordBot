@@ -166,7 +166,7 @@ function livestreamLoop(currentId) {
 
 async function quotaDebug() {
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentMidnightTimeout); // Remove currentMidnightTimeout from timeoutsActive
-    await client.channels.cache.get(process.env.ADMIN_ID).send("Quota usage is " + quota + ".");
+    await client.channels.cache.get(process.env.BOT_CH_ID).send("Quota usage is " + quota + ".");
     quota = 0;
     let currentTime = new Date();
     let nextMidnight = new Date(currentTime.getFullYear(),currentTime.getMonth(),currentTime.getDate()+1);
