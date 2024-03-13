@@ -50,17 +50,6 @@ function clearTimeoutsManually(identifier, method) {
     console.log("Timeout with " + method + ": " + identifier + " cleared successfully");
 };
 
-function getInfoFromYtChannelId(channelId) {
-    let streamerList = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE
-    + " ORDER BY OrgOrder ASC, ScanOrder ASC;");
-    for (let i = 0; i < streamerList.length; i++) {
-        if (streamerList[i].id == channelId) {
-            return streamerList[i];
-        };
-    };
-    console.error("Streamer table contains no entry with id: " + channelId);
-};
-
 function getInfoFromTwitchChannelId(channelId) {
     let streamerList = rawQuery("SELECT * FROM " + process.env.DB_TWITCH_STREAMER_TABLE
     + " ORDER BY OrgOrder ASC, ScanOrder ASC;");
@@ -329,7 +318,7 @@ async function processTwitchChannel(userId) {
 async function announceStream(streamId, channelId) {
     let streamData = await youtubeScraper.getVideoById(streamId);
     quota += 1;
-    let streamerInfo = getInfoFromYtChannelId(channelId);
+    let streamerInfo = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE YouTubeChannelID = '" + channelId + "';");
     let cacheIndex;
     let cacheData;
     let foundInCache = false;
