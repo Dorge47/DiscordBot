@@ -58,16 +58,18 @@ function getInfoFromYtChannelId(channelId) {
             return streamerList[i];
         };
     };
-    console.error("fileCache['ytStreamers'] contains no entry with id: " + channelId);
+    console.error("Streamer table contains no entry with id: " + channelId);
 };
 
 function getInfoFromTwitchChannelId(channelId) {
-    for (let i = 0; i < fileCache['twitchStreamers'].length; i++) {
-        if (fileCache['twitchStreamers'][i].id == channelId) {
-            return fileCache['twitchStreamers'][i];
+    let streamerList = rawQuery("SELECT * FROM " + process.env.DB_TWITCH_STREAMER_TABLE
+    + " ORDER BY OrgOrder ASC, ScanOrder ASC;");
+    for (let i = 0; i < streamerList.length; i++) {
+        if (streamerList[i].id == channelId) {
+            return streamerList[i];
         };
     };
-    console.error("fileCache['twitchStreamers'] contains no entry with id: " + channelId);
+    console.error("Twitch streamer table contains no entry with id: " + channelId);
 };
 
 function getAppropriateGuildChannel(org) {
