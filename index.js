@@ -85,38 +85,40 @@ function getAppropriateGuildChannel(org) {
 };
 
 async function startupPurge() {
-    for (let i = fileCache['ytStreams'].length - 1; i >= 0; i--) {
-        let timeUntilStream = new Date(fileCache['ytStreams'][i].available_at) - new Date();
-        if (timeUntilStream > 360000000) {
-            console.error("Stream with ID: " + fileCache['ytStreams'][i].id + " is over 100 hours in the future, ignoring");
-            fileCache['ytStreams'].splice(i, 1);
+    let upcomingStreams = rawQuery("SELECT * FROM " + process.env.DB_STREAMS_TABLE + " WHERE Announced = 0;");
+    for (let i = upcomingStreams.length - 1; i >= 0; i--) {
+        let timeUntilStream = new Date(upcomingStreams[i].available_at) - new Date();
+        if (timeUntilStream > 360000000) { // Probably free chat
+            console.error("Stream with ID: " + upcomingStreams[i].id + " is over 100 hours in the future, ignoring");
         }
-        else if (timeUntilStream > 0) {
-            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
-            let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+        else if (timeUntilStream > 0) { // Stream is still upcoming
+            // Don't need to call the API since announceStream() will do that and handle any cache desync
+            let announceTimeout = setTimeout(announceStream, timeUntilStream, upcomingStreams[i].id, upcomingStreams[i].channel.id);
+            let debugMsg = "Set timer for announcement of " + upcomingStreams[i].id + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
-            announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
+            announcementTimeouts.push([announceTimeout, upcomingStreams[i].id]);
         }
-        else if (fileCache['ytStreams'][i].available_at == undefined) {
-            fileCache['ytStreams'].splice(i,1);
+        else if (upcomingStreams[i].available_at == undefined) {
+            upcomingStreams.splice(i,1);
         }
-        else {
-            let streamData = await youtubeScraper.getVideoById(fileCache['ytStreams'][i].id);
+        else { // Stream was scheduled to go live before the bot came online
+            // We call the API here to avoid any unnecessary calls to announceStream()
+            let streamData = await youtubeScraper.getVideoById(upcomingStreams[i].id);
             quota += 1;
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
-                fileCache['ytStreams'].splice(i, 1);
+                upcomingStreams.splice(i, 1);
             }
             else if (timeUntilStream < -300000 && streamData.status == "live") {
-                fileCache['ytStreams'].splice(i, 1);
+                upcomingStreams.splice(i, 1);
             }
-            else {
-                let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
-                let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+            else { // Waiting for stream to start or stream has started less than 5 minutes ago
+                let announceTimeout = setTimeout(announceStream, timeUntilStream, upcomingStreams[i].id, upcomingStreams[i].channel.id);
+                let debugMsg = "Set timer for announcement of " + upcomingStreams[i].id + ", " + timeUntilStream + " milliseconds remaining";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
+                announcementTimeouts.push([announceTimeout, upcomingStreams[i].id]);
             };
         };
     };
@@ -125,7 +127,11 @@ async function startupPurge() {
 
 function twitchLoop(currentId) {
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentTwitchLoopTimeout); // Remove currentTwitchLoopTimeout from timeoutsActive
-    processTwitchChannel(fileCache['twitchStreamers'][currentId].id);
+    try {
+        processTwitchChannel(fileCache['twitchStreamers'][currentId].id);
+    } catch (err) {
+        throw err;
+    }
     var nextId = (currentId == fileCache['twitchStreamers'].length - 1) ? 0 : (currentId + 1);
     let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length));
     currentTwitchLoopTimeout = setTimeout(twitchLoop, twitchInterval, nextId);
@@ -203,10 +209,10 @@ async function processUpcomingStreams(channelId) {
     streamData = streamData[0];
     let holodexDown = false;
     let holodexData = [];
-    try {
+    try { // Holodex can occasionally see premieres or member streams that my API can't
         holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
     }
-    catch(err) {
+    catch (err) {
         holodexDown = true;
     };
     if (!holodexDown) {
@@ -241,16 +247,16 @@ async function processUpcomingStreams(channelId) {
         };
         let streamProcessed = false;
         for (let j = fileCache['ytStreams'].length - 1; j >= 0; j--) {
-            if (fileCache['ytStreams'][j].id == streamData[i].id) {
+            if (fileCache['ytStreams'][j].id == streamData[i].id) { // Found stream in cache
                 streamProcessed = true;
-                if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) {
+                if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) { // Start time has changed
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000 && streamData[i].status == "live") {
+                    if (timeUntilStream < -300000 && streamData[i].status == "live") { // We can't ever get to this point, right???
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
                         fileCache['ytStreams'].splice(j,1);
                     }
-                    else {
+                    else { // Reset announcenemt for new start time
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
                         debugMsg += "\n" + "process" + "\n" + streamData[i].available_at + " (" + typeof(streamData[i].available_at) + ")"
@@ -264,7 +270,7 @@ async function processUpcomingStreams(channelId) {
                 break;
             };
         };
-        if (!streamProcessed) {
+        if (!streamProcessed) { // New stream noticed, set announcement
             let timeUntilStream = new Date(streamData[i].available_at) - new Date();
             let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
             let debugMsg = "Set timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
@@ -284,7 +290,7 @@ async function processTwitchChannel(userId) {
     let streamerInfo = getInfoFromTwitchChannelId(userId);
     if (typeof streamData == 'undefined') {
         console.log(userId);
-        process.exit();
+        throw new Error('Failed to fetch streams from Twitch channel');
     }
     if (streamData.length == 0) { // User is not live
         for (let i = fileCache['twitchStreams'].length - 1; i >= 0; i--) { // Remove any of user's past streams from cache
@@ -353,7 +359,22 @@ async function announceStream(streamId, channelId) {
             announcementTimeouts.push([announceTimeout, streamData.id]);
             return;
         }
-        else if (streamData.status == "live") {
+        else if (streamData.status == "live") { // Stream has started less than five minutes ago
+            // We don't need to check if we've already announced the stream
+            // because there are only three ways a stream reaches this point:
+            // We're purging the cache at startup and happened upon a recently
+            // started stream, we're checking a stream at its scheduled start
+            // time and it already started, or we're in the 20-second loop and
+            // the stream just went live between the last loop and this one
+            try {
+                processTwitchChannel(fileCache['twitchStreamers'][0].id);
+            }
+            catch (err) {
+                // Twitch API token likely expired and we're in a reboot loop
+                // announcing the same stream on every restart
+                await queryAnnouncement(streamData);
+                process.exit();
+            }
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
             await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
             await queryAnnouncement(streamData);
