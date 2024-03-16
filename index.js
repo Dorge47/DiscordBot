@@ -85,7 +85,7 @@ function getAppropriateGuildChannel(org) {
 };
 
 async function startupPurge() {
-    let upcomingStreams = rawQuery("SELECT * FROM " + process.env.DB_STREAMS_TABLE + " WHERE Announced = 0;");
+    let upcomingStreams = rawQuery("SELECT * FROM " + process.env.DB_STREAMS_TABLE + " WHERE Status = 'Upcoming';");
     for (let i = upcomingStreams.length - 1; i >= 0; i--) {
         let timeUntilStream = new Date(upcomingStreams[i].available_at) - new Date();
         if (timeUntilStream > 360000000) { // Probably free chat
@@ -145,14 +145,15 @@ function twitchStartup() {
 };
 
 function livestreamLoop(currentId) {
+    let totalStreamers = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + ";").length; // Change this to include only the streamers the program intends to track
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentYtLoopTimeout); // Remove currentYtLoopTimeout from timeoutsActive
     processUpcomingStreams(fileCache['ytStreamers'][currentId].id);
-    var nextId = (currentId == fileCache['ytStreamers'].length - 1) ? 0 : (currentId + 1);
+    var nextId = (totalStreamers - 1) ? 0 : (currentId + 1);
     if (initLoop && !nextId) {
         console.log("Finished sweep, relaxing");
         initLoop = false;
     };
-    currentYtLoopTimeout = setTimeout(livestreamLoop, initLoop ? 5000 : 10000, nextId);
+    currentYtLoopTimeout = setTimeout(livestreamLoop, initLoop ? 2000 : 3000, nextId);
     timeoutsActive.push(currentYtLoopTimeout);
 };
 
@@ -187,12 +188,11 @@ async function queryAnnouncement(streamData) {
     let resp;
     try {
         conn = await pool.getConnection();
-        resp = await conn.query("INSERT INTO streams (VideoID, Status, Title, "
-        + "AvailableAt, Announced) VALUES (?, ?, ?, ?, 1) ON DUPLICATE KEY UPD"
-        + "ATE Status=?, Title=?, AvailableAt=?, Announced=1;",
-        [streamData.id, streamData.status, streamData.title,
-        streamData.available_at, streamData.id, streamData.status,
-        streamData.title, streamData.available_at]); // Will currently fail, there is no title property of streamData
+        resp = await conn.query("INSERT INTO streams (id, status, title, avail"
+        + "able_at) VALUES (?, 'live', ?, ?) ON DUPLICATE KEY UPDATE status='l"
+        + "ive', title=?, available_at=?", [streamData.id, streamData.title,
+        streamData.available_at, streamData.title, streamData.available_at]);
+        // Will currently fail, there is no title property of streamData
         console.log(resp);
     } catch (err) {
         throw err;
