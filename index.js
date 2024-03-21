@@ -95,6 +95,8 @@ function getAppropriateGuildChannel(org) {
             return process.env.IL_EN_ID;
         case 11:
             return process.env.PC_ID;
+        case 12:
+            return process.env.V4M_ID;
     };
 };
 
