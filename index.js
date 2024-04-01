@@ -378,7 +378,7 @@ async function announceStream(streamId, channelId) {
 
 async function fireYtAnnouncement(shortName = "YouTube Vtuber", videoId = "dQw4w9WgXcQ", guildChannelId = process.env.H_JP_ID) {// Verification should be done BEFORE this is called
     var verb = ' is ';
-    if (shortName == "FUWAMOCO") {
+    if (shortName == "FUWAMOCO" || shortName == "Mint & Matara") {
         verb = ' are ';
     };
     var preAnnounce = (shortName + verb + "live!");
