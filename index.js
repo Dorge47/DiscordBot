@@ -124,7 +124,7 @@ async function startupPurge() {
             if (streamData.status == "past" || streamData.status == "missing") {
                 fileCache['ytStreams'].splice(i, 1);
             }
-            else if (timeUntilStream < -300000 && streamData.status == "live") {
+            else if (timeUntilStream < -3600000) {
                 fileCache['ytStreams'].splice(i, 1);
             }
             else {
@@ -242,7 +242,7 @@ async function processUpcomingStreams(channelId) {
                 if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000 && streamData[i].status == "live") {
+                    if (timeUntilStream < -300000 && streamData[i].status == "live") { // UNREACHABLE
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
                         fileCache['ytStreams'].splice(j,1);
                     }
@@ -364,7 +364,22 @@ async function announceStream(streamId, channelId) {
             await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
         }
         else if (streamData.status == "past") {
-            console.log("Stream with ID: " + streamData.id + " already concluded, skipping");
+            console.log("Stream with ID: " + streamData.id + " already concluded, purging");
+        }
+        else if (timeUntilStream < -3600000) { // Streamer is over an hour late
+            console.log("Stream with ID: " + streamData.id + " is too late, purging");
+        }
+        else if (timeUntilStream < -300000) { // Streamer is late, recheck for live in 2 minutes
+            clearTimeoutsManually(streamData.id, "streamId");
+            let announceTimeout = setTimeout(announceStream, 120000, streamData.id, channelId);
+            let debugMsg = "Delaying announcement of " + streamData.id + " for 2 minutes (LATE)";
+            console.log(debugMsg);
+            timeoutsActive.push(announceTimeout);
+            announcementTimeouts.push([announceTimeout, streamData.id]);
+            if (foundInCache) {
+                fileCache['ytStreams'][cacheIndex] = streamData;
+            };
+            return;
         }
         else { // Recheck for live in 20 seconds
             clearTimeoutsManually(streamData.id, "streamId");
