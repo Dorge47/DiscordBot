@@ -391,6 +391,7 @@ async function announceStream(streamId, channelId) {
             if (foundInCache) {
                 fileCache['ytStreams'][cacheIndex] = streamData;
             };
+            console.log("Stream had " + streamData.available_at + " for property available_at");
             return;
         };
     };
