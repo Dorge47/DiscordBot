@@ -246,6 +246,10 @@ async function processUpcomingStreams(channelId) {
                         console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
                         fileCache['ytStreams'].splice(j,1);
                     }
+                    else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
+                        console.log("Stream with ID: " + streamDate[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
+                        fileCache['ytStreams'].splice(j,1);
+                    }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
@@ -349,6 +353,9 @@ async function announceStream(streamId, channelId) {
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData.id]);
             return;
+        }
+        else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
+            console.log("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
         }
         else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
