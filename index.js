@@ -243,12 +243,13 @@ async function processUpcomingStreams(channelId) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
                     if (timeUntilStream < -300000 && streamData[i].status == "live") {
-                        console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");;
+                        console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
                         fileCache['ytStreams'].splice(j,1);
                     }
                     else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
                         console.log("Stream with ID: " + streamDate[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
                         fileCache['ytStreams'].splice(j,1);
+                        client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamDate[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
@@ -308,7 +309,7 @@ async function processTwitchChannel(userId) {
         }
         else {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
-            await fireTwitchAnnouncement(streamerInfo.shortName, guildChannelId, streamData[0].user_login, streamData[0].game_name); // Can't tell if supposed to use user_name or user_login
+            await fireTwitchAnnouncement(streamerInfo.shortName, guildChannelId, streamData[0].user_login, streamData[0].game_name);
         };
         fileCache['twitchStreams'].push(streamData[0]);
         fs.writeFileSync('twitchStreams.json', JSON.stringify(fileCache['twitchStreams']));
@@ -356,6 +357,7 @@ async function announceStream(streamId, channelId) {
         }
         else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
             console.log("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
+            client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
         }
         else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
