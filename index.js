@@ -341,6 +341,10 @@ async function announceStream(streamId, channelId) {
             console.log("Stream with ID: " + streamData.id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
             console.log("Start time: " + streamData.available_at);
         }
+        else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
+            console.log("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
+            client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
+        }
         else if (timeUntilStream > 60000 && streamData.status != "live") {// Stream has been rescheduled for at least a minute from now
             clearTimeoutsManually(streamData.id, "streamId");
             let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData.id, channelId);
@@ -354,10 +358,6 @@ async function announceStream(streamId, channelId) {
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData.id]);
             return;
-        }
-        else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
-            console.log("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
-            client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamId + " was rescheduled for over 100 hours in the future, skipping announcement");
         }
         else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
