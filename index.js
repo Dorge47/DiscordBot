@@ -262,6 +262,12 @@ async function processUpcomingStreams(channelId) {
             };
         };
         if (!streamProcessed) {
+            for (let k = 0; k < announcementTimeouts.length; k++) {
+                if (announcementTimeouts[k][1] == streamData[i].id) { // Stream has announcement pending but is not present in cache, panic
+                    client.channels.cache.get(process.env.BOT_CH_ID).send(streamData[i].id + " was found in announcementTimeouts but not in streamData, panic!");
+                    process.exit();
+                };
+            };
             let timeUntilStream = new Date(streamData[i].available_at) - new Date();
             let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
             let debugMsg = "Set timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
