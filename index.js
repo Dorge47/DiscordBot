@@ -103,11 +103,11 @@ function getAppropriateGuildChannel(org) {
 async function startupPurge() {
     for (let i = fileCache['ytStreams'].length - 1; i >= 0; i--) {
         let timeUntilStream = new Date(fileCache['ytStreams'][i].available_at) - new Date();
-        if (timeUntilStream > 360000000) {
+        if (timeUntilStream > 360000000) { // future
             console.error("Stream with ID: " + fileCache['ytStreams'][i].id + " is over 100 hours in the future, ignoring");
             fileCache['ytStreams'].splice(i, 1);
         }
-        else if (timeUntilStream > 0) {
+        else if (timeUntilStream > 0) { // upcoming
             let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
             let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
@@ -117,14 +117,14 @@ async function startupPurge() {
         else if (fileCache['ytStreams'][i].available_at == undefined) {
             fileCache['ytStreams'].splice(i,1);
         }
-        else {
+        else { // rescheduled
             let streamData = await youtubeScraper.getVideoById(fileCache['ytStreams'][i].id);
             quota += 1;
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
                 fileCache['ytStreams'].splice(i, 1);
             }
-            else if (timeUntilStream < -3600000) {
+            else if (timeUntilStream < -3600000) { // too late
                 fileCache['ytStreams'].splice(i, 1);
             }
             else {
@@ -242,14 +242,10 @@ async function processUpcomingStreams(channelId) {
                 if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
-                    if (timeUntilStream < -300000 && streamData[i].status == "live") { // UNREACHABLE
-                        console.error("Stream with ID: " + streamData[i].id + " started " + (timeUntilStream * -1) + " milliseconds ago, skipping announcement");
+                    if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
+                        console.log("Stream with ID: " + streamData[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
                         fileCache['ytStreams'].splice(j,1);
-                    }
-                    else if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
-                        console.log("Stream with ID: " + streamDate[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
-                        fileCache['ytStreams'].splice(j,1);
-                        client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamDate[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
+                        client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamData[i].id + " was rescheduled for over 100 hours in the future, skipping announcement"); // Why doesn't this work??
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
@@ -391,7 +387,6 @@ async function announceStream(streamId, channelId) {
             if (foundInCache) {
                 fileCache['ytStreams'][cacheIndex] = streamData;
             };
-            console.log("Stream had " + streamData.available_at + " for property available_at");
             return;
         };
     };
