@@ -10,7 +10,7 @@ const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
 var fileCache = {};
 fileCache['ytStreamers'] = [];
 fileCache['twitchStreamers'] = [];
-fileCache['ytStreams'] = [];
+fileCache['ytStreams'] = {};
 fileCache['twitchStreams'] = [];
 const client = new Discord.Client({intents: ["GUILDS", "GUILD_MESSAGES"]});
 const pool = mariadb.createPool({
@@ -101,38 +101,39 @@ function getAppropriateGuildChannel(org) {
 };
 
 async function startupPurge() {
-    for (let i = fileCache['ytStreams'].length - 1; i >= 0; i--) {
-        let timeUntilStream = new Date(fileCache['ytStreams'][i].available_at) - new Date();
+    for (let streamId in fileCache['ytStreams']) {
+        let stream = fileCache['ytStreams'][streamId];
+        let timeUntilStream = new Date(stream.available_at) - new Date();
         if (timeUntilStream > 360000000) { // future
-            console.error("Stream with ID: " + fileCache['ytStreams'][i].id + " is over 100 hours in the future, ignoring");
-            fileCache['ytStreams'].splice(i, 1);
+            console.error("Stream with ID: " + streamId + " is over 100 hours in the future, ignoring");
+            delete fileCache['ytStreams'][streamId];
         }
         else if (timeUntilStream > 0) { // upcoming
-            let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
-            let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+            let announceTimeout = setTimeout(announceStream, timeUntilStream, streamId, stream.channel.id);
+            let debugMsg = "Set timer for announcement of " + streamId + ", " + timeUntilStream + " milliseconds remaining";
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
-            announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
+            announcementTimeouts.push([announceTimeout, streamId]);
         }
-        else if (fileCache['ytStreams'][i].available_at == undefined) {
-            fileCache['ytStreams'].splice(i,1);
+        else if (stream.available_at == undefined) {
+            delete fileCache['ytStreams'][streamId];
         }
         else { // rescheduled
-            let streamData = await youtubeScraper.getVideoById(fileCache['ytStreams'][i].id);
+            let streamData = await youtubeScraper.getVideoById(streamId);
             quota += 1;
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
-                fileCache['ytStreams'].splice(i, 1);
+                delete fileCache['ytStreams'][streamId];
             }
             else if (timeUntilStream < -3600000) { // too late
-                fileCache['ytStreams'].splice(i, 1);
+                delete fileCache['ytStreams'][streamId];
             }
             else {
-                let announceTimeout = setTimeout(announceStream, timeUntilStream, fileCache['ytStreams'][i].id, fileCache['ytStreams'][i].channel.id);
-                let debugMsg = "Set timer for announcement of " + fileCache['ytStreams'][i].id + ", " + timeUntilStream + " milliseconds remaining";
+                let announceTimeout = setTimeout(announceStream, timeUntilStream, streamId, stream.channel.id);
+                let debugMsg = "Set timer for announcement of " + streamId + ", " + timeUntilStream + " milliseconds remaining";
                 console.log(debugMsg);
                 timeoutsActive.push(announceTimeout);
-                announcementTimeouts.push([announceTimeout, fileCache['ytStreams'][i].id]);
+                announcementTimeouts.push([announceTimeout, streamId]);
             };
         };
     };
@@ -236,26 +237,27 @@ async function processUpcomingStreams(channelId) {
             continue; // Reject currently live since we can't tell whether we've already announced
         };
         let streamProcessed = false;
-        for (let j = fileCache['ytStreams'].length - 1; j >= 0; j--) {
-            if (fileCache['ytStreams'][j].id == streamData[i].id) {
+        for (let streamId in fileCache['ytStreams']) {
+            let stream = fileCache['ytStreams'][streamId]; // Passed by reference
+            if (streamId == streamData[i].id) {
                 streamProcessed = true;
-                if (fileCache['ytStreams'][j].available_at != streamData[i].available_at) {
+                if (stream.available_at != streamData[i].available_at) {
                     clearTimeoutsManually(streamData[i].id, "streamId");
                     let timeUntilStream = new Date(streamData[i].available_at) - new Date();
                     if (timeUntilStream > 360000000) { // Stream has been rescheduled for over 100 hours in the future
                         console.log("Stream with ID: " + streamData[i].id + " was rescheduled for over 100 hours in the future, skipping announcement");
-                        fileCache['ytStreams'].splice(j,1);
+                        delete fileCache['ytStreams'][streamId];
                         client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamData[i].id + " was rescheduled for over 100 hours in the future, skipping announcement"); // Why doesn't this work??
                     }
                     else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
                         debugMsg += "\n" + "process" + "\n" + streamData[i].available_at + " (" + typeof(streamData[i].available_at) + ")"
-                        debugMsg += "\n" + fileCache['ytStreams'][j].available_at + " (" + typeof(fileCache['ytStreams'][j].available_at) + ")";
+                        debugMsg += "\n" + stream.available_at + " (" + typeof(stream.available_at) + ")";
                         console.log(debugMsg);
                         timeoutsActive.push(announceTimeout);
                         announcementTimeouts.push([announceTimeout, streamData[i].id]);
-                        fileCache['ytStreams'][j] = streamData[i];
+                        fileCache['ytStreams'][streamId] = streamData[i];
                     };
                 };
                 break;
@@ -274,7 +276,7 @@ async function processUpcomingStreams(channelId) {
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData[i].id]);
-            fileCache['ytStreams'].push(streamData[i]);
+            fileCache['ytStreams'][streamData[i].id] = streamData[i];
         };
     };
     writeStreams();
@@ -323,16 +325,11 @@ async function announceStream(streamId, channelId) {
     let streamData = await youtubeScraper.getVideoById(streamId);
     quota += 1;
     let streamerInfo = getInfoFromYtChannelId(channelId);
-    let cacheIndex;
     let cacheData;
     let foundInCache = false;
-    for (let i = 0; i < fileCache['ytStreams'].length; i++) {
-        if (fileCache['ytStreams'][i].id == streamId) {
-            foundInCache = true;
-            cacheIndex = i;
-            cacheData = fileCache['ytStreams'][i];
-            break;
-        };
+    if (streamId in fileCache['ytStreams']) {
+        cacheData = fileCache['ytStreams'][streamId];
+        foundInCache = true;
     };
     if (streamData.status == "missing") {
         console.log(streamerInfo.shortName + " cancelled stream with ID: " + streamId + ", skipping announcement");
@@ -354,7 +351,7 @@ async function announceStream(streamId, channelId) {
             debugMsg += "\n" + "announce" + "\n" + streamData.available_at + " (" + typeof(streamData.available_at) + ")";
             if (foundInCache) {
                 debugMsg += "\n" + cacheData.available_at + " (" + typeof(cacheData.available_at) + ")";
-                fileCache['ytStreams'][cacheIndex] = streamData;
+                fileCache['ytStreams'][streamId] = streamData;
             };
             console.log(debugMsg);
             timeoutsActive.push(announceTimeout);
@@ -366,10 +363,10 @@ async function announceStream(streamId, channelId) {
             await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
         }
         else if (streamData.status == "past") {
-            console.log("Stream with ID: " + streamData.id + " already concluded, purging");
+            console.log("Stream with ID: " + streamData.id + " already concluded, pruning");
         }
         else if (timeUntilStream < -3600000) { // Streamer is over an hour late
-            console.log("Stream with ID: " + streamData.id + " is too late, purging");
+            console.log("Stream with ID: " + streamData.id + " is too late, pruning");
         }
         else if (timeUntilStream < -300000) { // Streamer is late, recheck for live in 2 minutes
             clearTimeoutsManually(streamData.id, "streamId");
@@ -379,7 +376,7 @@ async function announceStream(streamId, channelId) {
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData.id]);
             if (foundInCache) {
-                fileCache['ytStreams'][cacheIndex] = streamData;
+                fileCache['ytStreams'][streamId] = streamData;
             };
             return;
         }
@@ -391,14 +388,14 @@ async function announceStream(streamId, channelId) {
             timeoutsActive.push(announceTimeout);
             announcementTimeouts.push([announceTimeout, streamData.id]);
             if (foundInCache) {
-                fileCache['ytStreams'][cacheIndex] = streamData;
+                fileCache['ytStreams'][streamId] = streamData;
             };
             return;
         };
     };
     clearTimeoutsManually(streamData.id, "streamId");
     if (foundInCache) {
-        fileCache['ytStreams'].splice(cacheIndex, 1);
+        delete fileCache['ytStreams'][streamId];
     };
 };
 
