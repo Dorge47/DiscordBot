@@ -6,7 +6,7 @@ const mariadb = require('mariadb');
 const youtubeScraper = require('./../YouTubeAPI/screwyYouTubeAPI.js');// https://github.com/Dorge47/YouTubeAPI
 const twitch = require('./../TwitchAPI/screwyTwitchAPI.js');// https://github.com/Dorge47/TwitchAPI
 const holodex = require('./../HolodexAPI/screwyHolodexAPI.js');// https://github.com/Dorge47/HolodexAPI
-const twitchAPIKey = {"secret":process.env.TWITCH_SECRET, "token": process.env.TWITCH_TOKEN, "id":process.env.TWITCH_TOKEN};
+const twitchAPIKey = JSON.parse(fs.readFileSync("twitchapikey.json"));
 var fileCache = {};
 fileCache['ytStreamers'] = [];
 fileCache['twitchStreamers'] = [];
@@ -28,6 +28,17 @@ var announcementTimeouts = [];
 var initLoop = true;
 var quota = 0;
 
+function loadFileCache() {
+    fileCache['ytStreamers'] = JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
+    fileCache['ytStreams'] = JSON.parse(fs.readFileSync('ytStreams.json'));
+    fileCache['twitchStreamers'] = JSON.parse(fs.readFileSync('TwitchStreamers.json'));
+    fileCache['twitchStreams'] = JSON.parse(fs.readFileSync('twitchStreams.json'));
+};
+
+function writeStreams() {
+    fs.writeFileSync('ytStreams.json', JSON.stringify(fileCache['ytStreams']));
+};
+
 function clearTimeoutsManually(identifier, method) {
     switch (method) {
         case "streamId":
@@ -46,15 +57,22 @@ function clearTimeoutsManually(identifier, method) {
     console.log("Timeout with " + method + ": " + identifier + " cleared successfully");
 };
 
-function getInfoFromTwitchChannelId(channelId) {
-    let streamerList = rawQuery("SELECT * FROM " + process.env.DB_TWITCH_STREAMER_TABLE
-    + " ORDER BY OrgOrder ASC, ScanOrder ASC;");
-    for (let i = 0; i < streamerList.length; i++) {
-        if (streamerList[i].id == channelId) {
-            return streamerList[i];
+function getInfoFromYtChannelId(channelId) {
+    for (let i = 0; i < fileCache['ytStreamers'].length; i++) {
+        if (fileCache['ytStreamers'][i].id == channelId) {
+            return fileCache['ytStreamers'][i];
         };
     };
-    console.error("Twitch streamer table contains no entry with id: " + channelId);
+    console.error("fileCache['ytStreamers'] contains no entry with id: " + channelId);
+};
+
+function getInfoFromTwitchChannelId(channelId) {
+    for (let i = 0; i < fileCache['twitchStreamers'].length; i++) {
+        if (fileCache['twitchStreamers'][i].id == channelId) {
+            return fileCache['twitchStreamers'][i];
+        };
+    };
+    console.error("fileCache['twitchStreamers'] contains no entry with id: " + channelId);
 };
 
 function getAppropriateGuildChannel(org) {
@@ -126,11 +144,7 @@ async function startupPurge() {
 
 function twitchLoop(currentId) {
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentTwitchLoopTimeout); // Remove currentTwitchLoopTimeout from timeoutsActive
-    try {
-        processTwitchChannel(fileCache['twitchStreamers'][currentId].id);
-    } catch (err) {
-        throw err;
-    }
+    processTwitchChannel(fileCache['twitchStreamers'][currentId].id);
     var nextId = (currentId == fileCache['twitchStreamers'].length - 1) ? 0 : (currentId + 1);
     let twitchInterval = Math.floor(20000/(fileCache['twitchStreamers'].length));
     currentTwitchLoopTimeout = setTimeout(twitchLoop, twitchInterval, nextId);
@@ -144,15 +158,14 @@ function twitchStartup() {
 };
 
 function livestreamLoop(currentId) {
-    let totalStreamers = rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + ";").length; // Change this to include only the streamers the program intends to track
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentYtLoopTimeout); // Remove currentYtLoopTimeout from timeoutsActive
     processUpcomingStreams(fileCache['ytStreamers'][currentId].id);
-    var nextId = (totalStreamers - 1) ? 0 : (currentId + 1);
+    var nextId = (currentId == fileCache['ytStreamers'].length - 1) ? 0 : (currentId + 1);
     if (initLoop && !nextId) {
         console.log("Finished sweep, relaxing");
         initLoop = false;
     };
-    currentYtLoopTimeout = setTimeout(livestreamLoop, initLoop ? 2000 : 3000, nextId);
+    currentYtLoopTimeout = setTimeout(livestreamLoop, initLoop ? 5000 : 10000, nextId);
     timeoutsActive.push(currentYtLoopTimeout);
 };
 
@@ -167,37 +180,18 @@ async function quotaDebug() {
     timeoutsActive.push(currentMidnightTimeout);
 };
 
-async function rawQuery(queryString) { // NEVER pass data here, this is ONLY for internal requests
+async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
     let conn;
     let rows;
     try {
         conn = await pool.getConnection();
         rows = await conn.query(queryString);
-        //console.log(rows);
+        console.log(rows);
     } catch (err) {
         throw err;
     } finally {
         if (conn) await conn.end();
         return rows;
-    }
-};
-
-async function queryAnnouncement(streamData) {
-    let conn;
-    let resp;
-    try {
-        conn = await pool.getConnection();
-        resp = await conn.query("INSERT INTO streams (id, status, title, avail"
-        + "able_at) VALUES (?, 'live', ?, ?) ON DUPLICATE KEY UPDATE status='l"
-        + "ive', title=?, available_at=?", [streamData.id, streamData.title,
-        streamData.available_at, streamData.title, streamData.available_at]);
-        // Will currently fail, there is no title property of streamData
-        console.log(resp);
-    } catch (err) {
-        throw err;
-    } finally {
-        if (conn) await conn.end();
-        return resp;
     }
 };
 
@@ -208,10 +202,10 @@ async function processUpcomingStreams(channelId) {
     streamData = streamData[0];
     let holodexDown = false;
     let holodexData = [];
-    try { // Holodex can occasionally see premieres or member streams that my API can't
+    try {
         holodexData = await holodex.getFutureVids(channelId, process.env.HOLODEX_KEY);
     }
-    catch (err) {
+    catch(err) {
         holodexDown = true;
     };
     if (!holodexDown) {
@@ -257,7 +251,7 @@ async function processUpcomingStreams(channelId) {
                         delete fileCache['ytStreams'][streamId];
                         client.channels.cache.get(process.env.BOT_CH_ID).send("Stream with ID: " + streamData[i].id + " was rescheduled for over 100 hours in the future, skipping announcement"); // Why doesn't this work??
                     }
-                    else { // Reset announcenemt for new start time
+                    else {
                         let announceTimeout = setTimeout(announceStream, timeUntilStream, streamData[i].id, channelId);
                         let debugMsg = "Rectified timer for announcement of " + streamData[i].id + ", " + timeUntilStream + " milliseconds remaining";
                         debugMsg += "\n" + "process" + "\n" + streamData[i].available_at + " (" + typeof(streamData[i].available_at) + ")"
@@ -287,6 +281,7 @@ async function processUpcomingStreams(channelId) {
             fileCache['ytStreams'][streamData[i].id] = streamData[i];
         };
     };
+    writeStreams();
     //let functionEnd = new Date();
     //let functionLength = functionEnd - functionStart
     //console.log("Request took " + functionLength + " ms")
@@ -297,7 +292,7 @@ async function processTwitchChannel(userId) {
     let streamerInfo = getInfoFromTwitchChannelId(userId);
     if (typeof streamData == 'undefined') {
         console.log(userId);
-        throw new Error('Failed to fetch streams from Twitch channel');
+        process.exit();
     }
     if (streamData.length == 0) { // User is not live
         for (let i = fileCache['twitchStreams'].length - 1; i >= 0; i--) { // Remove any of user's past streams from cache
@@ -365,25 +360,9 @@ async function announceStream(streamId, channelId) {
             announcementTimeouts.push([announceTimeout, streamData.id]);
             return;
         }
-        else if (streamData.status == "live") { // Stream has started less than five minutes ago
-            // We don't need to check if we've already announced the stream
-            // because there are only three ways a stream reaches this point:
-            // We're purging the cache at startup and happened upon a recently
-            // started stream, we're checking a stream at its scheduled start
-            // time and it already started, or we're in the 20-second loop and
-            // the stream just went live between the last loop and this one
-            try {
-                processTwitchChannel(fileCache['twitchStreamers'][0].id);
-            }
-            catch (err) {
-                // Twitch API token likely expired and we're in a reboot loop
-                // announcing the same stream on every restart
-                await queryAnnouncement(streamData);
-                process.exit();
-            }
+        else if (streamData.status == "live") {
             let guildChannelId = getAppropriateGuildChannel(streamerInfo.org);
             await fireYtAnnouncement(streamerInfo.shortName, streamId, guildChannelId);
-            await queryAnnouncement(streamData);
         }
         else if (streamData.status == "past") {
             console.log("Stream with ID: " + streamData.id + " already concluded, pruning");
@@ -465,6 +444,7 @@ client.on('messageCreate', async msg => {
             for (let i = timeoutsActive.length - 1; i >= 0 ; i--) {
                 clearTimeout(timeoutsActive[i]);
             };
+            writeStreams();
             await msg.reply('Confirmed logout.');
             client.destroy();
             console.log("Server shutting down");
@@ -472,6 +452,10 @@ client.on('messageCreate', async msg => {
         case 'log':
             console.log(msg);
             await msg.reply('Confirmed log.');
+            break;
+        case 'refresh':
+            loadFileCache();
+            await msg.reply('Confirmed refresh of file cache.');
             break;
         case 'quota':
             msg.reply('Quota usage is ' + quota + '.');
@@ -488,9 +472,11 @@ client.login(process.env.CLIENT_TOKEN);// No Discord stuff past this point
 
 // Final initializations
 
+loadFileCache();
 setTimeout(function() {
     startupPurge();
     console.log("Synchronizing JSON");
+    writeStreams();
     console.log("JSON synchronized");
     currentYtLoopTimeout = setTimeout(livestreamLoop, 15000, 0);
     timeoutsActive.push(currentYtLoopTimeout);
