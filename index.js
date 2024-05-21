@@ -39,6 +39,35 @@ function writeStreams() {
     fs.writeFileSync('ytStreams.json', JSON.stringify(fileCache['ytStreams']));
 };
 
+async function queryStreamers(isTwitch) {
+    // Returns a map object that contains all ytStreamers. The key for each
+    // value is the YouTube channel ID of the streamer, and the value is the
+    // streamer object itself
+    let streamers = new Map();
+    if (isTwitch) {
+        let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_TWITCH_STREAMER_TABLE + ";");
+        for (let streamer in queryRes) {
+            streamers.set(streamer.TwitchChannelID, streamer);
+        };
+    }
+    else {
+        let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_STREAMER_TABLE + ";");
+        for (let streamer in queryRes) {
+            streamers.set(streamer.YouTubeChannelID, streamer);
+        };
+    }
+    return streamers;
+};
+
+async function queryStreams() {
+    let ytStreams = {};
+    let queryRes = await rawQuery("SELECT * FROM " + process.env.DB_YT_STREAM_TABLE + ";");
+    for (let ytStream in queryRes) {
+        ytStreams[ytStream.id] = ytStream;
+    };
+    return ytStreams;
+};
+
 function clearTimeoutsManually(identifier, method) {
     switch (method) {
         case "streamId":
@@ -218,7 +247,8 @@ async function processUpcomingStreams(channelId) {
                 };
             };
             if (!streamNoticed) {
-                // Check if Holodex is giving us a channel ID we don't have an org assigned to (it's happened with 2nd channels)
+                // Check if Holodex is giving us a channel ID we don't have an
+                // org assigned to (it's happened with 2nd channels)
                 let badChannelId = true;
                 for (let j = 0; j < fileCache['ytStreamers'].length; j++) {
                     if (holodexData[i].channel_id == fileCache['ytStreamers'][j].id) {
