@@ -39,10 +39,6 @@
     "id": "UC1CfXB_kRs3C-zaeTG3oGyg",
     "org": 1
 }, {
-    "shortName": "Aqua",
-    "id": "UC1opHUrw8rvnsadT-iGp7Cg",
-    "org": 1
-}, {
     "shortName": "Shion",
     "id": "UCXTpFs_3PqI41qX2d9tL2Rw",
     "org": 1
@@ -263,10 +259,6 @@
     "id": "UCoSrY_IQQVpmIRZ9Xf-y93g",
     "org": 3
 }, {
-    "shortName": "Ame",
-    "id": "UCyl1z3jo3XHR1riLFKG5UAg",
-    "org": 3
-}, {
     "shortName": "IRyS",
     "id": "UC8rcEBzJSleTkf_-agPM20g",
     "org": 3
@@ -359,10 +351,6 @@
     "id": "UCajbFh6e_R8QZdHAMbbi4rQ",
     "org": 9
 }, {
-    "shortName": "Yuko",
-    "id": "UCcIcMRVpNqWQn4WnDhRASAw",
-    "org": 10
-}, {
     "shortName": "Juna",
     "id": "UCTFCSCPvqjXEs3zq91aeOVg",
     "org": 10
@@ -389,10 +377,6 @@
 }, {
     "shortName": "Coni",
     "id": "UCUfgKgCxtFs1ZPlyiM3JcTw",
-    "org": 10
-}, {
-    "shortName": "Momo",
-    "id": "UCe0JiGnjPfEwEIbWASbOimw",
     "org": 10
 }, {
     "shortName": "Enya",
@@ -541,5 +525,21 @@
 }, {
     "shortName": "Meica05",
     "id": "UCp4G83RMBDN0EgZFSUDK7zw",
+    "org": 13
+}, {
+    "shortName": "Daisy",
+    "id": "UC972wWpcR84RvuH3QYGEO5Q",
+    "org": 13
+}, {
+    "shortName": "Cersea",
+    "id": "UCmTRbCwWxsdsLe5a4GElcNA",
+    "org": 13
+}, {
+    "shortName": "Riki",
+    "id": "UCxq402WAMVFx5lNcMzKU0cA",
+    "org": 13
+}, {
+    "shortName": "Yena",
+    "id": "UCeRQcxnk_XDkUZIsEpZUfQA",
     "org": 13
 }]
