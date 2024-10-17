@@ -445,6 +445,7 @@ client.on('messageCreate', async msg => {
                 clearTimeout(timeoutsActive[i]);
             };
             writeStreams();
+            pool.end();
             await msg.reply('Confirmed logout.');
             client.destroy();
             console.log("Server shutting down");
