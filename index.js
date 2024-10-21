@@ -288,7 +288,15 @@ async function processUpcomingStreams(channelId) {
 };
 
 async function processTwitchChannel(userId) {
-    let streamData = await twitch.getLiveStreams(userId,twitchAPIKey);
+    let streamData = {};
+    try {
+        streamData = await twitch.getLiveStreams(userId,twitchAPIKey);
+    }
+    catch(err) {
+        console.error("Twitch API call gave bad data:");
+        console.error(err);
+        return;
+    }
     let streamerInfo = getInfoFromTwitchChannelId(userId);
     if (typeof streamData == 'undefined') {
         console.log(userId);
