@@ -180,12 +180,17 @@ async function quotaDebug() {
     timeoutsActive.push(currentMidnightTimeout);
 };
 
-async function rawQuery(queryString) { // BAD BAD BAD BAD BAD THIS SHOULD BE PARAMETERIZED
+async function rawQuery(queryString, queryParams = null) {
     let conn;
     let rows;
     try {
         conn = await pool.getConnection();
-        rows = await conn.query(queryString);
+        if (queryParams == null) {
+            rows = await conn.query(queryString);
+        }
+        else {
+            rows = await conn.query(queryString, queryParams);
+        }
         console.log(rows);
     } catch (err) {
         throw err;
