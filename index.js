@@ -26,7 +26,6 @@ var currentTwitchLoopTimeout;
 var currentMidnightTimeout;
 var announcementTimeouts = [];
 var initLoop = true;
-var quota = 0;
 
 function loadFileCache() {
     fileCache['ytStreamers'] = JSON.parse(fs.readFileSync('YouTubeStreamers.json'));
@@ -122,7 +121,7 @@ async function startupPurge() {
         }
         else { // rescheduled
             let streamData = await youtubeScraper.getVideoById(streamId);
-            quota += 1;
+            incrementQuota();
             let timeUntilStream = new Date(streamData.available_at) - new Date();
             if (streamData.status == "past" || streamData.status == "missing") {
                 delete fileCache['ytStreams'][streamId];
@@ -169,10 +168,15 @@ function livestreamLoop(currentId) {
     timeoutsActive.push(currentYtLoopTimeout);
 };
 
+function incrementQuota() {
+    rawQuery('UPDATE quota SET quotaValue = quotaValue + 1 WHERE platform = "live";');
+};
+
 async function quotaDebug() {
     timeoutsActive = timeoutsActive.filter(timeout => timeout != currentMidnightTimeout); // Remove currentMidnightTimeout from timeoutsActive
-    await client.channels.cache.get(process.env.BOT_CH_ID).send("Quota usage is " + quota + ".");
-    quota = 0;
+    var quota = await rawQuery('SELECT * FROM quota WHERE platform = "live";');
+    await client.channels.cache.get(process.env.BOT_CH_ID).send("Quota usage is " + quota[0].quotaValue + ".");
+    rawQuery('UPDATE quota SET quotaValue = 0 WHERE platform = "live";');
     let currentTime = new Date();
     let nextMidnight = new Date(currentTime.getFullYear(),currentTime.getMonth(),currentTime.getDate()+1);
     let timeToMidnight = (nextMidnight - currentTime);
@@ -191,7 +195,6 @@ async function rawQuery(queryString, queryParams = null) {
         else {
             rows = await conn.query(queryString, queryParams);
         }
-        console.log(rows);
     } catch (err) {
         throw err;
     } finally {
@@ -203,7 +206,7 @@ async function rawQuery(queryString, queryParams = null) {
 async function processUpcomingStreams(channelId) {
     //let functionStart = new Date();
     let streamData = await youtubeScraper.getFutureVids(channelId);
-    quota += streamData[1];
+    rawQuery('UPDATE quota SET quotaValue = quotaValue + ? WHERE platform = "live";', [streamData[1]]);
     streamData = streamData[0];
     let holodexDown = false;
     let holodexData = [];
@@ -233,7 +236,7 @@ async function processUpcomingStreams(channelId) {
                 };
                 if (!badChannelId) {
                     let streamToPush = await youtubeScraper.getVideoById(holodexData[i].id);
-                    quota += 1;
+                    incrementQuota();
                     streamData.push(streamToPush);
                 };
             };
@@ -338,7 +341,7 @@ async function processTwitchChannel(userId) {
 
 async function announceStream(streamId, channelId) {
     let streamData = await youtubeScraper.getVideoById(streamId);
-    quota += 1;
+    incrementQuota();
     let streamerInfo = getInfoFromYtChannelId(channelId);
     let cacheData;
     let foundInCache = false;
@@ -472,7 +475,8 @@ client.on('messageCreate', async msg => {
             await msg.reply('Confirmed refresh of file cache.');
             break;
         case 'quota':
-            msg.reply('Quota usage is ' + quota + '.');
+            var quota = await rawQuery('SELECT * FROM quota WHERE platform = "live";');
+            msg.reply('Quota usage is ' + quota[0].quotaValue + '.');
         case 'query test':
             let queryString = "SELECT * FROM " + process.env.DB_STREAMER_TABLE + " WHERE AnnounceName = 'Iroha';";
             let queryRes = await rawQuery(queryString);
