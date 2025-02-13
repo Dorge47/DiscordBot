@@ -128,10 +128,6 @@
     "id": "UC6eWCld0KwmyHFbAqK3V-Rw",
     "org": 1
 }, {
-    "shortName": "Chloe",
-    "id": "UCIBY1ollUsauvVi4hW4cumw",
-    "org": 1
-}, {
     "shortName": "Iroha",
     "id": "UC_vMYWcDjmfdpH6r4TTn1MQ",
     "org": 1
@@ -366,15 +362,15 @@
 }, {
     "shortName": "Juna",
     "id": "UCTFCSCPvqjXEs3zq91aeOVg",
-    "org": 10
+    "org": 0
 }, {
     "shortName": "Rin",
     "id": "UCpZIbzoEC_3rZglErpQkbDg",
-    "org": 10
+    "org": 0
 }, {
     "shortName": "Fuyo",
     "id": "UC8zgKaS8LiyL28mdhRC2nBg",
-    "org": 10
+    "org": 0
 }, {
     "shortName": "Roca",
     "id": "UC9xR7uN0x5a6CH3Uopq7czA",
@@ -472,10 +468,6 @@
     "id": "UC0w_dvkIwnXzMak6gfeioRQ",
     "org": 11
 }, {
-    "shortName": "Saya",
-    "id": "UCFzQd4pZ43ZNEdWBFe7QOKA",
-    "org": 11
-}, {
     "shortName": "Runie",
     "id": "UCoAQsc-DQ0MjfTp059otQAw",
     "org": 11
@@ -550,7 +542,7 @@
 }, {
     "shortName": "Meica05",
     "id": "UCp4G83RMBDN0EgZFSUDK7zw",
-    "org": 13
+    "org": 0
 }, {
     "shortName": "Daisy",
     "id": "UC972wWpcR84RvuH3QYGEO5Q",
