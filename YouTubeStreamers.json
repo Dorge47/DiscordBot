@@ -32,10 +32,6 @@
     "id": "UCMwGHR0BTZuLsmjY_NT5Pwg",
     "org": 3
 }, {
-    "shortName": "Mumei",
-    "id": "UC3n5uGu18FoCy23ggWWp8tA",
-    "org": 3
-}, {
     "shortName": "Bae",
     "id": "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
     "org": 3
@@ -78,11 +74,11 @@
 }, {
     "shortName": "Kai",
     "id": "UCC4hjJp_MttwfZcuWc0OpVQ",
-    "org": 10
+    "org": 0
 }, {
     "shortName": "Coni",
     "id": "UCUfgKgCxtFs1ZPlyiM3JcTw",
-    "org": 10
+    "org": 0
 }, {
     "shortName": "Enya",
     "id": "UCBghUKA_L0na0SeQ6snzMMQ",
@@ -218,7 +214,7 @@
 }, {
     "shortName": "Michi",
     "id": "UCnS5IYNyGKOti9cFlK5SefQ",
-    "org": 7
+    "org": 0
 }, {
     "shortName": "Koa",
     "id": "UC4R6ddhBJp2bjQHVNxgNQSA",
