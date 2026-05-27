@@ -1,0 +1,2 @@
+.env filter=git-crypt diff=git-crypt
+twitchapikey.json filter=git-crypt diff=git-crypt

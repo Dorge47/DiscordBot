@@ -1,10 +1,8 @@
 ﻿/.vs
 /node_modules
-.env
 ytStreams.json
 twitchStreams.json
 bot.log
 startup.sh
-twitchapikey.json
 resetStreams.sh
 test.txt
